@@ -1,0 +1,372 @@
+# Diagramas de Classe - Sistema Hotelaria Luxury
+# Use estes códigos em: https://mermaid.live/ ou GitHub/GitLab Markdown
+
+## ============================================
+## 1. DIAGRAMA BUILDER PATTERN - Completo
+## ============================================
+
+```mermaid
+classDiagram
+    direction TB
+    
+    class IPacoteHospedagemBuilder {
+        <<interface>>
+        +DefinirNome(string nome)*
+        +DefinirDescricao(string descricao)*
+        +SelecionarQuarto(IQuarto quarto)*
+        +AdicionarCafeDaManha()*
+        +AdicionarAlmoco()*
+        +AdicionarJantar()*
+        +AdicionarServico(string nome, string descricao, decimal preco)*
+        +AplicarDesconto(decimal percentual)*
+        +Build() PacoteHospedagem
+        +Reset()*
+    }
+    
+    class PacoteRomanticoBuilder {
+        -PacoteHospedagem _pacote
+        +DefinirNome(string nome)
+        +DefinirDescricao(string descricao)
+        +SelecionarQuarto(IQuarto quarto)
+        +AdicionarCafeDaManha()
+        +AdicionarAlmoco()
+        +AdicionarJantar()
+        +AdicionarServico(string, string, decimal)
+        +AplicarDesconto(decimal percentual)
+        +Build() PacoteHospedagem
+        +Reset()
+    }
+    
+    class PacoteNegociosBuilder {
+        -PacoteHospedagem _pacote
+        +DefinirNome(string nome)
+        +DefinirDescricao(string descricao)
+        +SelecionarQuarto(IQuarto quarto)
+        +AdicionarCafeDaManha()
+        +AdicionarAlmoco()
+        +AdicionarJantar()
+        +AdicionarServico(string, string, decimal)
+        +AplicarDesconto(decimal percentual)
+        +Build() PacoteHospedagem
+        +Reset()
+    }
+    
+    class PacoteHospedagem {
+        +string Nome
+        +string Descricao
+        +IQuarto Quarto
+        +List~Refeicao~ Refeicoes
+        +List~ServicoAdicional~ Servicos
+        +decimal DescontoPercentual
+        +CalcularValorTotal(int dias) decimal
+        +ExibirDetalhes()
+    }
+    
+    class HotelDirector {
+        -IPacoteHospedagemBuilder _builder
+        +HotelDirector(IPacoteHospedagemBuilder builder)
+        +ConstruirPacoteRomanticoCompleto(IQuarto quarto)
+        +ConstruirPacoteNegociosCompleto(IQuarto quarto)
+        +ConstruirPacoteBasico(IQuarto quarto)
+        +ConstruirPacoteFimDeSemana(IQuarto quarto)
+        +ObterPacote() PacoteHospedagem
+    }
+    
+    class Refeicao {
+        +string Nome
+        +string Descricao
+        +string Horario
+        +decimal Preco
+        +Exibir()
+    }
+    
+    class ServicoAdicional {
+        +string Nome
+        +string Descricao
+        +decimal Preco
+        +Exibir()
+    }
+    
+    IPacoteHospedagemBuilder <|.. PacoteRomanticoBuilder
+    IPacoteHospedagemBuilder <|.. PacoteNegociosBuilder
+    PacoteRomanticoBuilder ..> PacoteHospedagem : creates
+    PacoteNegociosBuilder ..> PacoteHospedagem : creates
+    HotelDirector --> IPacoteHospedagemBuilder : uses
+    PacoteHospedagem --> Refeicao : contains
+    PacoteHospedagem --> ServicoAdicional : contains
+```
+
+## ============================================
+## 2. DIAGRAMA PROTOTYPE PATTERN - Completo
+## ============================================
+
+```mermaid
+classDiagram
+    direction TB
+    
+    class IQuarto {
+        <<interface>>
+        +string Tipo*
+        +string Descricao*
+        +decimal PrecoBaseDiaria*
+        +int Capacidade*
+        +List~string~ Comodidades*
+        +Clone() IQuarto*
+        +ExibirDetalhes()*
+    }
+    
+    class QuartoStandard {
+        +string Tipo = "Standard"
+        +string Descricao
+        +decimal PrecoBaseDiaria = 250
+        +int Capacidade = 2
+        +List~string~ Comodidades
+        +Clone() IQuarto
+        +QuartoStandard()
+    }
+    
+    class QuartoLuxo {
+        +string Tipo = "Luxo"
+        +string Descricao
+        +decimal PrecoBaseDiaria = 550
+        +int Capacidade = 3
+        +List~string~ Comodidades
+        +Clone() IQuarto
+        +QuartoLuxo()
+    }
+    
+    class Suite {
+        +string Tipo = "Suite"
+        +string Descricao
+        +decimal PrecoBaseDiaria = 1050
+        +int Capacidade = 4
+        +List~string~ Comodidades
+        +Clone() IQuarto
+        +Suite()
+    }
+    
+    class HotelService {
+        -List~IQuarto~ _prototipos
+        +HotelService()
+        +ObterPrototiposQuartos() List~IQuarto~
+        +ObterPrototipoPorTipo(string tipo) IQuarto
+        +CriarBuilder(string tipoPacote) IPacoteHospedagemBuilder
+    }
+    
+    IQuarto <|.. QuartoStandard
+    IQuarto <|.. QuartoLuxo
+    IQuarto <|.. Suite
+    HotelService --> IQuarto : manages prototypes
+```
+
+## ============================================
+## 3. DIAGRAMA ARQUITETURA MVC - Sistema Completo
+## ============================================
+
+```mermaid
+classDiagram
+    direction TB
+    
+    %% Controllers
+    class HomeController {
+        -HotelService _hotelService
+        -GerenciadorReservas _gerenciador
+        +Index() IActionResult
+        +Pacotes() IActionResult
+        +Disponibilidade() IActionResult
+        +VerificarDisponibilidade(DateTime, DateTime) IActionResult
+    }
+    
+    class ReservasController {
+        -GerenciadorReservas _gerenciador
+        -HotelService _hotelService
+        +Index() IActionResult
+        +Criar() IActionResult
+        +Criar(string, string, string, DateTime, DateTime) IActionResult
+        +Detalhes(string id) IActionResult
+        +CheckIn(string id) IActionResult
+        +CheckOut(string id) IActionResult
+    }
+    
+    %% Services
+    class HotelService {
+        -List~IQuarto~ _prototipos
+        +ObterPrototiposQuartos() List~IQuarto~
+        +ObterPrototipoPorTipo(string) IQuarto
+        +CriarBuilder(string) IPacoteHospedagemBuilder
+    }
+    
+    class GerenciadorReservas {
+        -List~Reserva~ _reservasAtivas
+        -Dictionary~string, int~ _quartosPorTipo
+        +CriarReservaWeb(...) Reserva
+        +ObterTodasReservas() List~Reserva~
+        +ObterReservaPorId(string) Reserva
+        +RealizarCheckIn(string) bool
+        +RealizarCheckOut(string) bool
+        +QuartoDisponivel(...) bool
+    }
+    
+    %% Models
+    class Reserva {
+        +string Id
+        +string HospedeNome
+        +string TipoQuarto
+        +DateTime DataEntrada
+        +DateTime DataSaida
+        +PacoteHospedagem Pacote
+        +decimal ValorTotal
+        +StatusReserva Status
+        +CheckInRealizado
+        +CheckOutRealizado
+    }
+    
+    class PacoteHospedagem {
+        +string Nome
+        +string Descricao
+        +IQuarto Quarto
+        +decimal DescontoPercentual
+        +CalcularValorTotal(int) decimal
+    }
+    
+    %% Views (simplificado)
+    class Views {
+        <<folder>>
+        Index.cshtml
+        Pacotes.cshtml
+        Criar.cshtml
+        Detalhes.cshtml
+    }
+    
+    %% Relacionamentos
+    HomeController --> HotelService : uses
+    HomeController --> GerenciadorReservas : uses
+    ReservasController --> HotelService : uses
+    ReservasController --> GerenciadorReservas : uses
+    GerenciadorReservas --> Reserva : manages
+    Reserva --> PacoteHospedagem : contains
+    HotelService ..> IQuarto : prototypes
+```
+
+## ============================================
+## 4. DIAGRAMA DE SEQUÊNCIA - Criar Reserva
+## ============================================
+
+```mermaid
+sequenceDiagram
+    actor Cliente
+    participant RC as ReservasController
+    participant HS as HotelService
+    participant G as GerenciadorReservas
+    participant HD as HotelDirector
+    participant PB as PacoteBuilder
+    participant P as PacoteHospedagem
+
+    Cliente->>RC: POST /Criar (dados reserva)
+    
+    alt Com Pacote selecionado
+        RC->>RC: tipoQuartoFinal = "Standard" (padrão)
+    else Sem Pacote
+        RC->>RC: tipoQuartoFinal = tipoQuarto informado
+    end
+    
+    RC->>HS: ObterPrototipoPorTipo(tipoQuartoFinal)
+    HS-->>RC: IQuarto (clonado via Prototype)
+    
+    RC->>HS: CriarBuilder(tipoPacote)
+    HS-->>RC: IPacoteHospedagemBuilder
+    
+    RC->>HD: new HotelDirector(builder)
+    RC->>HD: ConstruirPacoteXxx(quarto)
+    
+    HD->>PB: Reset()
+    HD->>PB: DefinirNome("...")
+    HD->>PB: SelecionarQuarto(quarto)
+    HD->>PB: AdicionarCafeDaManha()
+    HD->>PB: AdicionarAlmoco()
+    HD->>PB: AdicionarJantar()
+    HD->>PB: AdicionarServico(...)
+    HD->>PB: AplicarDesconto(X%)
+    
+    RC->>HD: ObterPacote()
+    HD->>PB: Build()
+    PB-->>HD: PacoteHospedagem
+    HD-->>RC: PacoteHospedagem
+    
+    RC->>G: CriarReservaWeb(dados, pacote)
+    G->>G: Verificar disponibilidade
+    G->>G: Calcular valor total
+    G->>G: Adicionar à lista de reservas
+    G-->>RC: Reserva criada
+    
+    RC-->>Cliente: Redirect para Detalhes
+```
+
+## ============================================
+## 5. DIAGRAMA DE ESTADOS - Reserva
+## ============================================
+
+```mermaid
+stateDiagram-v2
+    [*] --> Reservada: Criar reserva
+    
+    Reservada --> CheckInRealizado: Check-in
+    Reservada --> Cancelada: Cancelar
+    
+    CheckInRealizado --> CheckOutRealizado: Check-out
+    CheckInRealizado --> Cancelada: Cancelar (com taxa)
+    
+    CheckOutRealizado --> [*]: Concluída
+    Cancelada --> [*]: Encerrada
+```
+
+## ============================================
+## 6. DIAGRAMA COMPONENTES - Sistema
+## ============================================
+
+```mermaid
+graph TB
+    subgraph "Apresentação"
+        V[Views Razor]
+        C[Controllers]
+    end
+    
+    subgraph "Negócio"
+        S[Serviços]
+        M[Models]
+    end
+    
+    subgraph "Padrões de Projeto"
+        B[Builder Pattern]
+        P[Prototype Pattern]
+    end
+    
+    subgraph "Dados"
+        R[Reservas em Memória]
+    end
+    
+    V --> C
+    C --> S
+    S --> M
+    S --> B
+    S --> P
+    B --> M
+    P --> M
+    S --> R
+```
+
+## ============================================
+## INSTRUÇÕES DE USO
+## ============================================
+
+1. Copie o código entre os delimitadores ```mermaid
+2. Cole em: https://mermaid.live/ para visualizar
+3. Ou use diretamente no GitHub/GitLab (suportam Mermaid nativamente)
+4. Para exportar imagem: No Mermaid Live Editor, clique em "Actions" → "PNG/SVG"
+
+## Dicas:
+- TB = Top to Bottom (vertical)
+- LR = Left to Right (horizontal)
+- <--|> = Herança/Implementação
+- --> = Associação/Dependência
+- ..> = Uso/Dependência fraca
