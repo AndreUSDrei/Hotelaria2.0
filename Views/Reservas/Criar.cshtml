@@ -1,0 +1,150 @@
+@{
+    ViewData["Title"] = "Nova Reserva";
+    var quartos = ViewBag.Quartos as List<IQuarto>;
+    var tiposPacote = ViewBag.TiposPacote as string[];
+}
+
+<h1>📝 Nova Reserva</h1>
+<p class="subtitle">Selecione um pacote de hospedagem (o quarto já está incluído!) Ou escolha apenas um quarto sem pacote.</p>
+
+<form method="post" class="form-reserva" id="formReserva">
+    <div class="form-group">
+        <label>Nome do Hóspede</label>
+        <input type="text" name="hospedeNome" class="form-control" required />
+    </div>
+
+    <div class="form-row">
+        <div class="form-group">
+            <label>Data de Entrada</label>
+            <input type="date" name="dataEntrada" class="form-control" required 
+                   min="@DateTime.Now.ToString("yyyy-MM-dd")" />
+        </div>
+        <div class="form-group">
+            <label>Data de Saída</label>
+            <input type="date" name="dataSaida" class="form-control" required 
+                   min="@DateTime.Now.AddDays(1).ToString("yyyy-MM-dd")" />
+        </div>
+    </div>
+
+    <div class="form-group" id="grupoQuarto">
+        <label>Tipo de Quarto <span class="hint" id="quartoHint">(será definido pelo pacote)</span></label>
+        <select name="tipoQuarto" id="tipoQuarto" class="form-control">
+            <option value="">Selecione um quarto...</option>
+            @foreach (var q in quartos)
+            {
+                <option value="@q.Tipo">@q.Tipo - R$ @q.PrecoBaseDiaria/night</option>
+            }
+        </select>
+        <small class="form-text" id="quartoInfo">Se selecionar um pacote, o quarto será escolhido automaticamente.</small>
+    </div>
+
+    <div class="form-group">
+        <label>Pacote de Hospedagem <span class="hint">(inclui quarto + serviços)</span></label>
+        <select name="tipoPacote" id="tipoPacote" class="form-control">
+            <option value="">Sem pacote - apenas quarto</option>
+            @foreach (var tp in tiposPacote)
+            {
+                <option value="@tp">@tp</option>
+            }
+        </select>
+    </div>
+
+    <div class="pacote-info" id="infoPacote">
+        <h4>📦 Tipos de Pacote:</h4>
+        <ul>
+            <li><strong>Romantico:</strong> Café no quarto, spa, decoração especial - <span class="preco-pacote">10% OFF</span></li>
+            <li><strong>Negocios:</strong> Café expresso, sala de reuniões, transfer - <span class="preco-pacote">15% OFF</span></li>
+            <li><strong>Basico:</strong> Café da manhã buffet</li>
+            <li><strong>FimDeSemana:</strong> Café, jantar, academia - <span class="preco-pacote">20% OFF</span></li>
+        </ul>
+        <p class="aviso-pacote"><strong>💡 Dica:</strong> Os pacotes já incluem o quarto! Se escolher um pacote, não precisa selecionar o quarto separadamente.</p>
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-lg">Criar Reserva</button>
+    <a href="~/Reservas" class="btn btn-secondary">Cancelar</a>
+</form>
+
+<style>
+    .subtitle {
+        color: #666;
+        margin-bottom: 2rem;
+    }
+    
+    .hint {
+        font-size: 0.85rem;
+        color: #C9A962;
+        font-weight: 500;
+    }
+    
+    .form-text {
+        display: block;
+        margin-top: 0.5rem;
+        font-size: 0.85rem;
+        color: #666;
+    }
+    
+    .preco-pacote {
+        background: #27ae60;
+        color: white;
+        padding: 0.2rem 0.6rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: bold;
+    }
+    
+    .aviso-pacote {
+        margin-top: 1rem;
+        padding: 0.8rem;
+        background: linear-gradient(135deg, #C9A96220 0%, #E8D5A320 100%);
+        border-left: 4px solid #C9A962;
+        border-radius: 4px;
+        color: #1A1A2E;
+    }
+    
+    #grupoQuarto.disabled {
+        opacity: 0.6;
+    }
+    
+    #grupoQuarto.disabled select {
+        background-color: #f5f5f5;
+        cursor: not-allowed;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tipoPacote = document.getElementById('tipoPacote');
+        const tipoQuarto = document.getElementById('tipoQuarto');
+        const grupoQuarto = document.getElementById('grupoQuarto');
+        const quartoHint = document.getElementById('quartoHint');
+        const quartoInfo = document.getElementById('quartoInfo');
+        
+        function atualizarEstadoQuarto() {
+            const pacoteSelecionado = tipoPacote.value !== '';
+            
+            if (pacoteSelecionado) {
+                // Pacote selecionado - desabilitar quarto
+                tipoQuarto.disabled = true;
+                tipoQuarto.value = ''; // Limpar seleção
+                grupoQuarto.classList.add('disabled');
+                quartoHint.textContent = '(incluído no pacote)';
+                quartoHint.style.color = '#27ae60';
+                quartoInfo.textContent = 'O quarto será atribuído automaticamente pelo sistema de acordo com o pacote escolhido.';
+            } else {
+                // Sem pacote - habilitar quarto
+                tipoQuarto.disabled = false;
+                tipoQuarto.required = true;
+                grupoQuarto.classList.remove('disabled');
+                quartoHint.textContent = '(obrigatório sem pacote)';
+                quartoHint.style.color = '#e74c3c';
+                quartoInfo.textContent = 'Selecione o tipo de quarto desejado.';
+            }
+        }
+        
+        // Inicializar estado
+        atualizarEstadoQuarto();
+        
+        // Ouvir mudanças no pacote
+        tipoPacote.addEventListener('change', atualizarEstadoQuarto);
+    });
+</script>

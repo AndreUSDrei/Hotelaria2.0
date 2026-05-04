@@ -1,0 +1,60 @@
+@model List<Reserva>
+@{
+    ViewData["Title"] = "Reservas";
+}
+
+<h1>📋 Reservas</h1>
+
+<a href="~/Reservas/Criar" class="btn btn-primary mb-3">+ Nova Reserva</a>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">Nenhuma reserva encontrada.</div>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Hóspede</th>
+                <th>Quarto</th>
+                <th>Entrada</th>
+                <th>Saída</th>
+                <th>Valor</th>
+                <th>Status</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var r in Model)
+            {
+                <tr>
+                    <td>@r.Id</td>
+                    <td>@r.HospedeNome</td>
+                    <td>@r.TipoQuarto</td>
+                    <td>@r.DataEntrada.ToString("dd/MM/yyyy")</td>
+                    <td>@r.DataSaida.ToString("dd/MM/yyyy")</td>
+                    <td>R$ @r.ValorTotal.ToString("N2")</td>
+                    <td>
+                        @if (r.CheckOutRealizado)
+                        {
+                            <span class="badge badge-success">Finalizada</span>
+                        }
+                        else if (r.CheckInRealizado)
+                        {
+                            <span class="badge badge-warning">Em estadia</span>
+                        }
+                        else
+                        {
+                            <span class="badge badge-info">Reservada</span>
+                        }
+                    </td>
+                    <td>
+                        <a href="~/Reservas/Detalhes/@r.Id" class="btn btn-sm">Ver</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

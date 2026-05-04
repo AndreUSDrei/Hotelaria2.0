@@ -1,0 +1,82 @@
+@model Reserva
+@{
+    ViewData["Title"] = $"Reserva #{Model.Id}";
+}
+
+<h1>📋 Reserva #@Model.Id</h1>
+
+<div class="reserva-detalhes">
+    <div class="card">
+        <h3>Informações Gerais</h3>
+        <p><strong>Hóspede:</strong> @Model.HospedeNome</p>
+        <p><strong>Período:</strong> @Model.DataEntrada.ToString("dd/MM/yyyy") a @Model.DataSaida.ToString("dd/MM/yyyy")</p>
+        <p><strong>Tipo de Quarto:</strong> @Model.TipoQuarto</p>
+        <p><strong>Valor Total:</strong> <span class="valor-total">R$ @Model.ValorTotal.ToString("N2")</span></p>
+    </div>
+
+    <div class="card">
+        <h3>Status</h3>
+        <div class="status-timeline">
+            <div class="status-item @(Model.CheckInRealizado ? "completed" : "pending")">
+                <span class="icon">@(Model.CheckInRealizado ? "✅" : "⏳")</span>
+                <span>Check-in</span>
+            </div>
+            <div class="status-item @(Model.CheckOutRealizado ? "completed" : "pending")">
+                <span class="icon">@(Model.CheckOutRealizado ? "✅" : "⏳")</span>
+                <span>Check-out</span>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.Pacote != null)
+    {
+        <div class="card">
+            <h3>📦 @Model.Pacote.Nome</h3>
+            <p>@Model.Pacote.Descricao</p>
+            
+            @if (Model.Pacote.DescontoPercentual > 0)
+            {
+                <p><strong>Desconto:</strong> @Model.Pacote.DescontoPercentual%</p>
+            }
+
+            @if (Model.Pacote.Refeicoes.Any())
+            {
+                <h4>🍽️ Refeições Incluídas:</h4>
+                <ul>
+                    @foreach (var r in Model.Pacote.Refeicoes)
+                    {
+                        <li>@r.Nome - @r.Descricao (R$ @r.Preco)</li>
+                    }
+                </ul>
+            }
+
+            @if (Model.Pacote.Servicos.Any())
+            {
+                <h4>✨ Serviços Adicionais:</h4>
+                <ul>
+                    @foreach (var s in Model.Pacote.Servicos)
+                    {
+                        <li>@s.Nome - @s.Descricao (R$ @s.Preco)</li>
+                    }
+                </ul>
+            }
+        </div>
+    }
+
+    <div class="acoes">
+        @if (!Model.CheckInRealizado)
+        {
+            <form method="post" action="~/Reservas/CheckIn/@Model.Id" style="display:inline">
+                <button type="submit" class="btn btn-success">✅ Realizar Check-in</button>
+            </form>
+        }
+        else if (!Model.CheckOutRealizado)
+        {
+            <form method="post" action="~/Reservas/CheckOut/@Model.Id" style="display:inline">
+                <button type="submit" class="btn btn-warning">👋 Realizar Check-out</button>
+            </form>
+        }
+        
+        <a href="~/Reservas" class="btn btn-secondary">Voltar</a>
+    </div>
+</div>
