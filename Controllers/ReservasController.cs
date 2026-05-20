@@ -1,81 +1,42 @@
 using Microsoft.AspNetCore.Mvc;
-using SistemaHotelaria.Builder;
-using SistemaHotelaria.Models;
-using SistemaHotelaria.Prototype;
-using SistemaHotelaria.Services;
+using SistemaHotelaria.Services.Facade;
 
 namespace SistemaHotelaria.Controllers;
 
 public class ReservasController : Controller
 {
-    private readonly GerenciadorReservas _gerenciador;
-    private readonly HotelService _hotelService;
+    private readonly IReservaFacade _reservaFacade;
 
-    public ReservasController(GerenciadorReservas gerenciador, HotelService hotelService)
+    public ReservasController(IReservaFacade reservaFacade)
     {
-        _gerenciador = gerenciador;
-        _hotelService = hotelService;
+        _reservaFacade = reservaFacade;
     }
 
     public IActionResult Index()
     {
-        var reservas = _gerenciador.ObterTodasReservas();
+        var reservas = _reservaFacade.ObterTodasReservas();
         return View(reservas);
     }
 
     public IActionResult Criar()
     {
-        ViewBag.Quartos = _hotelService.ObterPrototiposQuartos();
-        ViewBag.TiposPacote = new[] { "Romantico", "Negocios", "Basico", "FimDeSemana" };
+        ViewBag.Quartos = _reservaFacade.ObterPrototiposQuartos();
+        ViewBag.TiposPacote = _reservaFacade.ObterTiposPacote();
         return View();
     }
 
     [HttpPost]
-    public IActionResult Criar(string hospedeNome, string tipoQuarto, string tipoPacote, 
+    public IActionResult Criar(string hospedeNome, string tipoQuarto, string tipoPacote,
                                DateTime dataEntrada, DateTime dataSaida)
     {
-        // Se pacote foi selecionado mas quarto não, usar quarto Standard como padrão
-        string tipoQuartoFinal = tipoQuarto;
-        if (!string.IsNullOrEmpty(tipoPacote) && string.IsNullOrEmpty(tipoQuarto))
-        {
-            tipoQuartoFinal = "Standard";
-        }
-        
-        var quarto = _hotelService.ObterPrototipoPorTipo(tipoQuartoFinal);
-        if (quarto == null)
-        {
-            TempData["Erro"] = "Tipo de quarto não encontrado";
-            return RedirectToAction(nameof(Criar));
-        }
+        var reserva = _reservaFacade.CriarReservaComPacote(hospedeNome, tipoQuarto, tipoPacote, dataEntrada, dataSaida);
 
-        var builder = _hotelService.CriarBuilder(tipoPacote);
-        var director = new HotelDirector(builder);
-
-        switch (tipoPacote)
-        {
-            case "Romantico":
-                director.ConstruirPacoteRomanticoCompleto(quarto);
-                break;
-            case "Negocios":
-                director.ConstruirPacoteNegociosCompleto(quarto);
-                break;
-            case "Basico":
-                director.ConstruirPacoteBasico(quarto);
-                break;
-            case "FimDeSemana":
-                director.ConstruirPacoteFimDeSemana(quarto);
-                break;
-            default:
-                // Sem pacote - criar pacote básico apenas com o quarto
-                director.ConstruirPacoteBasico(quarto);
-                break;
-        }
-
-        var reserva = _gerenciador.CriarReservaWeb(hospedeNome, tipoQuartoFinal, dataEntrada, dataSaida, director.ObterPacote());
-        
         if (reserva == null)
         {
-            TempData["Erro"] = "Não há quartos disponíveis para este período";
+            var quartoInformado = !string.IsNullOrEmpty(tipoQuarto) || !string.IsNullOrEmpty(tipoPacote);
+            TempData["Erro"] = quartoInformado
+                ? "Não há quartos disponíveis para este período ou tipo de quarto inválido"
+                : "Tipo de quarto não encontrado";
             return RedirectToAction(nameof(Criar));
         }
 
@@ -86,34 +47,34 @@ public class ReservasController : Controller
 
     public IActionResult Detalhes(string id)
     {
-        var reserva = _gerenciador.ObterReservaPorId(id);
+        var reserva = _reservaFacade.ObterReservaPorId(id);
         if (reserva == null)
             return NotFound();
-        
+
         return View(reserva);
     }
 
     [HttpPost]
     public IActionResult CheckIn(string id)
     {
-        var sucesso = _gerenciador.RealizarCheckIn(id);
+        var sucesso = _reservaFacade.RealizarCheckIn(id);
         if (sucesso)
             TempData["Sucesso"] = "Check-in realizado com sucesso!";
         else
             TempData["Erro"] = "Não foi possível realizar o check-in";
-        
+
         return RedirectToAction(nameof(Detalhes), new { id });
     }
 
     [HttpPost]
     public IActionResult CheckOut(string id)
     {
-        var sucesso = _gerenciador.RealizarCheckOut(id);
+        var sucesso = _reservaFacade.RealizarCheckOut(id);
         if (sucesso)
             TempData["Sucesso"] = "Check-out realizado com sucesso!";
         else
             TempData["Erro"] = "Não foi possível realizar o check-out";
-        
+
         return RedirectToAction(nameof(Detalhes), new { id });
     }
 }

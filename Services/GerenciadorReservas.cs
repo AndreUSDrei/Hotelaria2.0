@@ -1,50 +1,52 @@
 using SistemaHotelaria.Builder;
 using SistemaHotelaria.Models;
 using SistemaHotelaria.Prototype;
+using SistemaHotelaria.Services.Notifications;
+using SistemaHotelaria.Services.Persistence;
 
 namespace SistemaHotelaria.Services;
 
-public class GerenciadorReservas
+public class GerenciadorReservas : IGerenciadorReservas
 {
-    private readonly List<Reserva> _reservasAtivas = new();
+    private readonly IReservaRepository _repositorio;
+    private readonly INotificacaoReserva _notificacao;
+    private readonly IInventarioQuartos _inventario;
+    private readonly ReservaNotificacaoAdapter _reservaNotificacao;
     private int _contadorQuartos = 100;
 
-    private readonly Dictionary<string, int> _quartosPorTipo = new()
+    public GerenciadorReservas(
+        IReservaRepository repositorio,
+        INotificacaoReserva notificacao,
+        IInventarioQuartos inventario,
+        ReservaNotificacaoAdapter reservaNotificacao)
     {
-        { "Standard", 20 },
-        { "Luxo", 10 },
-        { "Suíte Presidencial", 3 }
-    };
+        _repositorio = repositorio;
+        _notificacao = notificacao;
+        _inventario = inventario;
+        _reservaNotificacao = reservaNotificacao;
+    }
+
+    private IReadOnlyDictionary<string, int> QuartosPorTipo => _inventario.ObterCapacidadePorTipo();
 
     public bool QuartoDisponivel(string tipoQuarto, DateTime dataEntrada, DateTime dataSaida)
     {
-        var reservasConflitantes = _reservasAtivas.Count(r =>
-            r.TipoQuarto == tipoQuarto &&
-            !r.CheckOutRealizado &&
-            r.DataEntrada < dataSaida &&
-            r.DataSaida > dataEntrada);
-
-        return reservasConflitantes < _quartosPorTipo.GetValueOrDefault(tipoQuarto, 0);
+        var conflitos = _repositorio.ContarConflitos(tipoQuarto, dataEntrada, dataSaida);
+        return conflitos < QuartosPorTipo.GetValueOrDefault(tipoQuarto, 0);
     }
 
     public int ObterQuantidadeQuartosDisponiveis(string tipoQuarto, DateTime dataEntrada, DateTime dataSaida)
     {
-        var reservasConflitantes = _reservasAtivas.Count(r =>
-            r.TipoQuarto == tipoQuarto &&
-            !r.CheckOutRealizado &&
-            r.DataEntrada < dataSaida &&
-            r.DataSaida > dataEntrada);
-
-        int total = _quartosPorTipo.GetValueOrDefault(tipoQuarto, 0);
-        return total - reservasConflitantes;
+        var conflitos = _repositorio.ContarConflitos(tipoQuarto, dataEntrada, dataSaida);
+        int total = QuartosPorTipo.GetValueOrDefault(tipoQuarto, 0);
+        return total - conflitos;
     }
 
-    public Reserva? CriarReserva(string nomeHospede, IQuarto quartoBase, IPacoteHospedagemBuilder builder, 
+    public Reserva? CriarReserva(string nomeHospede, IQuarto quartoBase, IPacoteHospedagemBuilder builder,
                                  HotelDirector director, DateTime entrada, DateTime saida)
     {
         if (!QuartoDisponivel(quartoBase.Tipo, entrada, saida))
         {
-            Console.WriteLine($"\n❌ Não há quartos {quartoBase.Tipo} disponíveis para o período solicitado.");
+            _notificacao.InformarErro($"\n❌ Não há quartos {quartoBase.Tipo} disponíveis para o período solicitado.");
             return null;
         }
 
@@ -61,101 +63,101 @@ public class GerenciadorReservas
             ValorTotal = pacote.CalcularValorTotal(dias)
         };
 
-        _reservasAtivas.Add(reserva);
-        Console.WriteLine($"\n✅ Reserva #{reserva.Id} criada com sucesso!");
-        
+        _repositorio.Adicionar(reserva);
+        _notificacao.InformarSucesso($"\n✅ Reserva #{reserva.Id} criada com sucesso!");
+
         return reserva;
     }
 
     public bool RealizarCheckIn(string idReserva)
     {
-        var reserva = _reservasAtivas.FirstOrDefault(r => r.Id == idReserva);
+        var reserva = _repositorio.ObterPorId(idReserva);
         if (reserva == null)
         {
-            Console.WriteLine($"❌ Reserva {idReserva} não encontrada.");
+            _notificacao.InformarErro($"❌ Reserva {idReserva} não encontrada.");
             return false;
         }
 
         if (reserva.CheckInRealizado)
         {
-            Console.WriteLine($"⚠️ Check-in já realizado para reserva {idReserva}.");
+            _notificacao.Informar($"⚠️ Check-in já realizado para reserva {idReserva}.");
             return false;
         }
 
         reserva.CheckInRealizado = true;
         int numeroQuarto = ++_contadorQuartos;
-        Console.WriteLine($"\n🏨 Check-in realizado! Quarto atribuído: {numeroQuarto}");
+        _notificacao.InformarSucesso($"\n🏨 Check-in realizado! Quarto atribuído: {numeroQuarto}");
         return true;
     }
 
     public bool RealizarCheckOut(string idReserva)
     {
-        var reserva = _reservasAtivas.FirstOrDefault(r => r.Id == idReserva);
+        var reserva = _repositorio.ObterPorId(idReserva);
         if (reserva == null)
         {
-            Console.WriteLine($"❌ Reserva {idReserva} não encontrada.");
+            _notificacao.InformarErro($"❌ Reserva {idReserva} não encontrada.");
             return false;
         }
 
         if (!reserva.CheckInRealizado)
         {
-            Console.WriteLine($"⚠️ Check-in não realizado para reserva {idReserva}.");
+            _notificacao.Informar($"⚠️ Check-in não realizado para reserva {idReserva}.");
             return false;
         }
 
         if (reserva.CheckOutRealizado)
         {
-            Console.WriteLine($"⚠️ Check-out já realizado para reserva {idReserva}.");
+            _notificacao.Informar($"⚠️ Check-out já realizado para reserva {idReserva}.");
             return false;
         }
 
         reserva.CheckOutRealizado = true;
-        Console.WriteLine($"\n👋 Check-out realizado! Obrigado pela estadia.");
+        _notificacao.InformarSucesso($"\n👋 Check-out realizado! Obrigado pela estadia.");
         return true;
     }
 
     public void ListarReservas()
     {
-        Console.WriteLine("\n═══════════════════════════════════════════════════════════");
-        Console.WriteLine("📋 RESERVAS ATIVAS");
-        Console.WriteLine("═══════════════════════════════════════════════════════════");
+        _notificacao.Informar("\n═══════════════════════════════════════════════════════════");
+        _notificacao.Informar("📋 RESERVAS ATIVAS");
+        _notificacao.Informar("═══════════════════════════════════════════════════════════");
 
-        if (!_reservasAtivas.Any())
+        var reservas = _repositorio.ObterTodas();
+        if (!reservas.Any())
         {
-            Console.WriteLine("Nenhuma reserva ativa.");
+            _notificacao.Informar("Nenhuma reserva ativa.");
             return;
         }
 
-        foreach (var reserva in _reservasAtivas)
+        foreach (var reserva in reservas)
         {
-            reserva.ExibirDetalhes();
-            Console.WriteLine("───────────────────────────────────────────────────────────");
+            _reservaNotificacao.ExibirDetalhes(reserva, _notificacao);
+            _notificacao.Informar("───────────────────────────────────────────────────────────");
         }
     }
 
     public void ExibirDisponibilidade(DateTime dataEntrada, DateTime dataSaida)
     {
-        Console.WriteLine("\n═══════════════════════════════════════════════════════════");
-        Console.WriteLine($"📅 Disponibilidade: {dataEntrada:dd/MM/yyyy} a {dataSaida:dd/MM/yyyy}");
-        Console.WriteLine("═══════════════════════════════════════════════════════════");
+        _notificacao.Informar("\n═══════════════════════════════════════════════════════════");
+        _notificacao.Informar($"📅 Disponibilidade: {dataEntrada:dd/MM/yyyy} a {dataSaida:dd/MM/yyyy}");
+        _notificacao.Informar("═══════════════════════════════════════════════════════════");
 
-        foreach (var tipo in _quartosPorTipo.Keys)
+        foreach (var tipo in QuartosPorTipo.Keys)
         {
             int disponiveis = ObterQuantidadeQuartosDisponiveis(tipo, dataEntrada, dataSaida);
-            int total = _quartosPorTipo[tipo];
-            Console.WriteLine($"   {tipo}: {disponiveis}/{total} disponíveis");
+            int total = QuartosPorTipo[tipo];
+            _notificacao.Informar($"   {tipo}: {disponiveis}/{total} disponíveis");
         }
     }
 
-    // Métodos para Web
-    public List<Reserva> ObterTodasReservas() => _reservasAtivas.ToList();
+    public List<Reserva> ObterTodasReservas() => _repositorio.ObterTodas().ToList();
 
-    public Reserva? ObterReservaPorId(string id) => _reservasAtivas.FirstOrDefault(r => r.Id == id);
+    public Reserva? ObterReservaPorId(string id) => _repositorio.ObterPorId(id);
 
     public Dictionary<string, int> ObterDisponibilidadeCompleta(DateTime entrada, DateTime saida)
     {
         var disponibilidade = new Dictionary<string, int>();
-        foreach (var tipo in _quartosPorTipo.Keys)
+        foreach (var tipo in QuartosPorTipo.Keys)
         {
             disponibilidade[tipo] = ObterQuantidadeQuartosDisponiveis(tipo, entrada, saida);
         }
@@ -178,7 +180,7 @@ public class GerenciadorReservas
             ValorTotal = pacote.CalcularValorTotal(dias)
         };
 
-        _reservasAtivas.Add(reserva);
+        _repositorio.Adicionar(reserva);
         return reserva;
     }
 }

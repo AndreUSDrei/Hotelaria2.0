@@ -1,23 +1,21 @@
 using Microsoft.AspNetCore.Mvc;
-using SistemaHotelaria.Services;
+using SistemaHotelaria.Services.Facade;
 
 namespace SistemaHotelaria.Controllers;
 
 public class HomeController : Controller
 {
-    private readonly HotelService _hotelService;
-    private readonly GerenciadorReservas _gerenciador;
+    private readonly IReservaFacade _reservaFacade;
 
-    public HomeController(HotelService hotelService, GerenciadorReservas gerenciador)
+    public HomeController(IReservaFacade reservaFacade)
     {
-        _hotelService = hotelService;
-        _gerenciador = gerenciador;
+        _reservaFacade = reservaFacade;
     }
 
     public IActionResult Index()
     {
-        var quartos = _hotelService.ObterPrototiposQuartos();
-        ViewBag.ReservasAtivas = _gerenciador.ObterTodasReservas().Count;
+        var quartos = _reservaFacade.ObterPrototiposQuartos();
+        ViewBag.ReservasAtivas = _reservaFacade.ContarReservasAtivas();
         return View(quartos);
     }
 
@@ -29,7 +27,7 @@ public class HomeController : Controller
     [HttpPost]
     public IActionResult VerificarDisponibilidade(DateTime entrada, DateTime saida)
     {
-        var disponibilidade = _gerenciador.ObterDisponibilidadeCompleta(entrada, saida);
+        var disponibilidade = _reservaFacade.ObterDisponibilidadeCompleta(entrada, saida);
         ViewBag.Entrada = entrada;
         ViewBag.Saida = saida;
         return View(disponibilidade);
@@ -37,7 +35,7 @@ public class HomeController : Controller
 
     public IActionResult Pacotes()
     {
-        var quartos = _hotelService.ObterPrototiposQuartos();
+        var quartos = _reservaFacade.ObterPrototiposQuartos();
         return View(quartos);
     }
 }

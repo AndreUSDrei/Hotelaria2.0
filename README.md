@@ -1,11 +1,11 @@
 # 🏨 Sistema de Hotelaria Luxury
 
-Sistema completo de gerenciamento de hotel desenvolvido em **ASP.NET Core MVC** utilizando os padrões de projeto **Builder** e **Prototype**. Interface web premium com design de hotel 5 estrelas.
+Sistema completo de gerenciamento de hotel desenvolvido em **ASP.NET Core MVC** utilizando os padrões de projeto **Facade**, **Adapter**, **Proxy**, **Builder** e **Prototype**. Interface web premium com design de hotel 5 estrelas.
 
 ![.NET 9.0](https://img.shields.io/badge/.NET-9.0-512BD4)
 ![C#](https://img.shields.io/badge/C%23-12.0-239120)
 ![MVC](https://img.shields.io/badge/ASP.NET%20MVC-Core-blue)
-![Patterns](https://img.shields.io/badge/Patterns-Builder%20%2B%20Prototype-orange)
+![Patterns](https://img.shields.io/badge/Patterns-Facade%20%7C%20Adapter%20%7C%20Proxy%20%7C%20Builder%20%7C%20Prototype-orange)
 
 ---
 
@@ -13,6 +13,9 @@ Sistema completo de gerenciamento de hotel desenvolvido em **ASP.NET Core MVC** 
 
 - [Sobre o Projeto](#sobre-o-projeto)
 - [Padrões de Projeto](#padrões-de-projeto)
+  - [Facade Pattern](#facade-pattern)
+  - [Adapter Pattern](#adapter-pattern)
+  - [Proxy Pattern](#proxy-pattern)
   - [Builder Pattern](#builder-pattern)
   - [Prototype Pattern](#prototype-pattern)
 - [Funcionalidades](#funcionalidades)
@@ -26,7 +29,7 @@ Sistema completo de gerenciamento de hotel desenvolvido em **ASP.NET Core MVC** 
 
 ## 🎯 Sobre o Projeto
 
-O **Sistema de Hotelaria Luxury** é uma aplicação web para gestão de reservas de hotel, demonstrando a aplicação prática dos padrões de projeto **Builder** e **Prototype** no contexto de desenvolvimento ASP.NET Core MVC.
+O **Sistema de Hotelaria Luxury** é uma aplicação web para gestão de reservas de hotel, demonstrando a aplicação prática dos padrões **Facade**, **Adapter**, **Proxy**, **Builder** e **Prototype** no contexto de desenvolvimento ASP.NET Core MVC.
 
 ### Contexto do Negócio
 O hotel oferece três tipos de quartos (Standard, Luxo e Suíte) e quatro pacotes de hospedagem (Romântico, Business, Básico e Fim de Semana). O sistema gerencia disponibilidade, check-in/check-out e cálculo de valores.
@@ -34,6 +37,63 @@ O hotel oferece três tipos de quartos (Standard, Luxo e Suíte) e quatro pacote
 ---
 
 ## 🏗️ Padrões de Projeto
+
+### Facade Pattern
+
+O padrão **Facade** oferece uma interface simplificada para um subsistema complexo. No projeto, `ReservaFacade` encapsula Builder, Director, Prototype e gerenciamento de reservas.
+
+#### Implementação
+
+```
+Services/Facade/
+├── IReservaFacade.cs      # Interface da fachada
+└── ReservaFacade.cs       # Orquestra HotelService + IGerenciadorReservas
+```
+
+#### Fluxo Facade
+```
+Controller → IReservaFacade.CriarReservaComPacote()
+                    ↓
+         [Prototype: quarto] → [Builder + Director: pacote] → [Reserva]
+```
+
+Os controllers dependem apenas de `IReservaFacade`, sem conhecer `HotelDirector` nem o `switch` de tipos de pacote.
+
+### Adapter Pattern
+
+O padrão **Adapter** converte interfaces incompatíveis em contratos estáveis, preparando o sistema para novas implementações.
+
+#### Implementação
+
+```
+Services/Persistence/
+├── IReservaRepository.cs           # Contrato de persistência
+└── InMemoryReservaRepository.cs    # Adapta List<Reserva> em memória
+
+Services/Notifications/
+├── INotificacaoReserva.cs          # Contrato de notificação
+├── ConsoleNotificacaoAdapter.cs    # Adapta Console.WriteLine
+└── WebNotificacaoAdapter.cs        # Canal web (sem console)
+```
+
+`GerenciadorReservas` usa `IReservaRepository` e `INotificacaoReserva` em vez de acessar lista e `Console` diretamente.
+
+### Proxy Pattern
+
+O padrão **Proxy** controla o acesso a um objeto real, adicionando comportamento transversal sem alterar a lógica de negócio.
+
+#### Implementação
+
+```
+Services/Proxies/
+├── GerenciadorReservasProxy.cs       # Validação de datas + logging
+└── CachingDisponibilidadeProxy.cs    # Cache de consultas de disponibilidade
+```
+
+#### Cadeia de proxies (DI em Program.cs)
+```
+IGerenciadorReservas → CachingDisponibilidadeProxy → GerenciadorReservasProxy → GerenciadorReservas
+```
 
 ### Builder Pattern
 
@@ -153,8 +213,22 @@ Builder e Prototype/
 │   └── ServicoAdicional.cs
 │
 ├── 📂 Services/                     # Serviços de negócio
-│   ├── GerenciadorReservas.cs     # Singleton para gerenciamento
-│   └── HotelService.cs              # Centraliza lógica de hotel
+│   ├── 📂 Facade/                   # Padrão Facade
+│   │   ├── IReservaFacade.cs
+│   │   └── ReservaFacade.cs
+│   ├── 📂 Persistence/              # Padrão Adapter (persistência)
+│   │   ├── IReservaRepository.cs
+│   │   └── InMemoryReservaRepository.cs
+│   ├── 📂 Notifications/            # Padrão Adapter (notificações)
+│   │   ├── INotificacaoReserva.cs
+│   │   ├── ConsoleNotificacaoAdapter.cs
+│   │   └── WebNotificacaoAdapter.cs
+│   ├── 📂 Proxies/                  # Padrão Proxy
+│   │   ├── GerenciadorReservasProxy.cs
+│   │   └── CachingDisponibilidadeProxy.cs
+│   ├── IGerenciadorReservas.cs
+│   ├── GerenciadorReservas.cs
+│   └── HotelService.cs
 │
 ├── 📂 Controllers/                  # Controllers MVC
 │   ├── HomeController.cs
