@@ -1,0 +1,106 @@
+```mermaid
+flowchart TD
+    %% ============================================================
+    %% DIAGRAMA DE ATIVIDADES - Padrão Decorator
+    %% ============================================================
+    %% Este diagrama mostra o fluxo de criação de uma reserva
+    %% com serviços extras usando o Padrão Decorator.
+    %% ============================================================
+
+    Start((Início)) --> AcessarPagina[/Usuário acessa página de criação de reserva/]
+    AcessarPagina --> ExibirFormulario[Exibir formulário com pacotes e serviços extras]
+
+    ExibirFormulario --> SelecionarPacote[Usuário seleciona tipo de quarto e pacote]
+    SelecionarPacote --> MarcarDecorators{Usuário marca serviços extras?}
+
+    MarcarDecorators -->|Não| CriarReservaSemDecorator
+    MarcarDecorators -->|Sim| CriarReservaComDecorator
+
+    %% ============================================================
+    %% FLUXO SEM DECORATOR (Caminho Original)
+    %% ============================================================
+    CriarReservaSemDecorator[Controller.Criar]
+    CriarReservaSemDecorator --> FacadeSemDecorator[Facade.CriarReservaComPacote]
+    FacadeSemDecorator --> BuilderSem[Builder cria pacote base]
+    BuilderSem --> GerenciadorSem[Gerenciador cria reserva]
+    GerenciadorSem --> SalvarSem[Salvar reserva no repositório]
+    SalvarSem --> RedirecionarDetalhes[/Redirecionar para página de detalhes/]
+
+    %% ============================================================
+    %% FLUXO COM DECORATOR (Caminho com Padrão Decorator)
+    %% ============================================================
+    CriarReservaComDecorator[Controller.CriarComDecorators]
+    CriarReservaComDecorator --> ReceberLista[Receber lista de decorators selecionados]
+    ReceberLista --> ChamarFacade[Chamar Facade.CriarReservaComPacoteEDecorators]
+
+    ChamarFacade --> ObterQuarto[Obter protótipo de quarto via Prototype]
+    ObterQuarto --> CriarBuilder[Criar Builder para tipo de pacote]
+    CriarBuilder --> Director[HotelDirector constrói pacote base]
+    Director --> ObterPacoteBase[Obter PacoteHospedagem base]
+
+    %% ============================================================
+    %% APLICAÇÃO DOS DECORATORS
+    %% ============================================================
+    ObterPacoteBase --> IterarDecorators[Iterar sobre lista de decorators]
+
+    IterarDecorators --> VerificarDecorator{Há mais decorators?}
+    VerificarDecorator -->|Sim| CriarDecoratorInstancia[Factory Method: Criar instância do decorator]
+    CriarDecoratorInstancia --> AplicarDecorator[Decorator.AdicionarServicoExtra]
+    AplicarDecorator --> AtualizarPacote[Decorator adiciona serviço ao pacote]
+    AtualizarPacote --> AtualizarDescricao[Decorator atualiza descrição do pacote]
+    AtualizarDescricao --> VerificarDecorator
+
+    VerificarDecorator -->|Não| CalcularValor[Calcular valor total com decorators]
+
+    %% ============================================================
+    %% CÁLCULO DO VALOR TOTAL
+    %% ============================================================
+    CalcularValor --> VerificarDecoratorAplicado{Houve decorators aplicados?}
+    VerificarDecoratorAplicado -->|Sim| UsarCalculoDecorator[Usar CalcularValorTotalComDecorators]
+    VerificarDecoratorAplicado -->|Não| UsarCalculoPadrao[Usar CalcularValorTotal padrão]
+
+    UsarCalculoDecorator --> VerificarDisponibilidade[Verificar disponibilidade do quarto]
+    UsarCalculoPadrao --> VerificarDisponibilidade
+
+    VerificarDisponibilidade --> Disponivel{Quarto disponível?}
+    Disponivel -->|Não| RetornarNull[Retornar null - erro]
+    Disponivel -->|Sim| CriarReservaObj[Criar objeto Reserva]
+
+    RetornarNull --> ExibirErro[/Exibir erro de indisponibilidade/]
+    ExibirErro --> Fim((Fim))
+
+    CriarReservaObj --> AtualizarValorTotal[Atualizar ValorTotal com cálculo dos decorators]
+    AtualizarValorTotal --> ChamarGerenciador[Chamar Gerenciador.CriarReservaWeb]
+    ChamarGerenciador --> SalvarRepositorio[Salvar reserva no repositório]
+    SalvarRepositorio --> RetornarReserva[Retornar Reserva criada]
+
+    RetornarReserva --> MontarMensagem[Controller monta mensagem de sucesso]
+    MontarMensagem --> IncluirDecoratorsMsg{Incluir decorators na mensagem?}
+    IncluirDecoratorsMsg -->|Sim| AdicionarLista[Adicionar lista de serviços extras]
+    IncluirDecoratorsMsg -->|Não| ApenasPacote[Apenas nome do pacote]
+    AdicionarLista --> Redirecionar
+    ApenasPacote --> Redirecionar
+
+    Redirecionar[RedirectToAction Detalhes com ID da reserva]
+    Redirecionar --> RedirecionarDetalhes
+
+    %% ============================================================
+    %% ESTILOS
+    %% ============================================================
+    classDef processo fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef decisao fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef inicioFim fill:#c8e6c9,stroke:#2e7d32,stroke-width:2px
+    classDef usuario fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    classDef decorator fill:#ffe0b2,stroke:#e65100,stroke-width:2px
+    classDef builder fill:#b2dfdb,stroke:#00695c,stroke-width:2px
+    classDef facade fill:#d1c4e9,stroke:#4527a0,stroke-width:2px
+
+    class Start,Fim inicioFim
+    class AcessarPagina,ExibirFormulario,RedirecionarDetalhes usuario
+    class SelecionarPacote,MarcarDecorators,CriarReservaComDecorator,ReceberLista,ChamarFacade,MontarMensagem,IncluirDecoratorsMsg,AdicionarLista,ApenasPacote,Redirecionar processo
+    class MarcarDecorator,VerificarDecorator,VerificarDecoratorAplicado,Disponivel,IncluirDecoratorsMsg decisao
+    class CriarDecoratorInstancia,AplicarDecorator,AtualizarPacote,AtualizarDescricao decorator
+    class ObterQuarto,CriarBuilder,Director,ObterPacoteBase,BuilderSem builder
+    class FacadeSemDecorator,ChamarFacade facade
+    class CriarReservaSemDecorator,RetornarNull,ExibirErro processo
+```
