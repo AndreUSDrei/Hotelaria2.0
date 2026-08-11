@@ -10,5 +10,6 @@ public interface IReservaRepository
     IReadOnlyList<Reserva> ObterTodas();
     Reserva? ObterPorId(string id);
     void Adicionar(Reserva reserva);
+    void Atualizar(Reserva reserva);
     int ContarConflitos(string tipoQuarto, DateTime dataEntrada, DateTime dataSaida);
 }

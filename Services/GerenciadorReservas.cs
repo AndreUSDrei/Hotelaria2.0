@@ -3,6 +3,8 @@ using SistemaHotelaria.Models;
 using SistemaHotelaria.Prototype;
 using SistemaHotelaria.Services.Notifications;
 using SistemaHotelaria.Services.Persistence;
+using SistemaHotelaria.Services.Observer;
+using SistemaHotelaria.Services.Strategy;
 
 namespace SistemaHotelaria.Services;
 
@@ -12,18 +14,21 @@ public class GerenciadorReservas : IGerenciadorReservas
     private readonly INotificacaoReserva _notificacao;
     private readonly IInventarioQuartos _inventario;
     private readonly ReservaNotificacaoAdapter _reservaNotificacao;
+    private readonly IEnumerable<IObserver> _observadores;
     private int _contadorQuartos = 100;
 
     public GerenciadorReservas(
         IReservaRepository repositorio,
         INotificacaoReserva notificacao,
         IInventarioQuartos inventario,
-        ReservaNotificacaoAdapter reservaNotificacao)
+        ReservaNotificacaoAdapter reservaNotificacao,
+        IEnumerable<IObserver> observadores)
     {
         _repositorio = repositorio;
         _notificacao = notificacao;
         _inventario = inventario;
         _reservaNotificacao = reservaNotificacao;
+        _observadores = observadores;
     }
 
     private IReadOnlyDictionary<string, int> QuartosPorTipo => _inventario.ObterCapacidadePorTipo();
@@ -85,6 +90,8 @@ public class GerenciadorReservas : IGerenciadorReservas
         }
 
         reserva.CheckInRealizado = true;
+        _repositorio.Atualizar(reserva);
+
         int numeroQuarto = ++_contadorQuartos;
         _notificacao.InformarSucesso($"\n🏨 Check-in realizado! Quarto atribuído: {numeroQuarto}");
         return true;
@@ -112,6 +119,8 @@ public class GerenciadorReservas : IGerenciadorReservas
         }
 
         reserva.CheckOutRealizado = true;
+        _repositorio.Atualizar(reserva);
+
         _notificacao.InformarSucesso($"\n👋 Check-out realizado! Obrigado pela estadia.");
         return true;
     }
@@ -164,12 +173,21 @@ public class GerenciadorReservas : IGerenciadorReservas
         return disponibilidade;
     }
 
-    public Reserva? CriarReservaWeb(string nomeHospede, string tipoQuarto, DateTime entrada, DateTime saida, PacoteHospedagem pacote)
+    public Reserva? CriarReservaWeb(string nomeHospede, string tipoQuarto, DateTime entrada, DateTime saida, PacoteHospedagem pacote, string metodoPagamento = "Pix")
     {
         if (!QuartoDisponivel(tipoQuarto, entrada, saida))
             return null;
 
         int dias = (saida - entrada).Days;
+        decimal valorTotal = pacote.CalcularValorTotal(dias);
+        var estrategiaPagamento = EstrategiaPagamentoFactory.Criar(metodoPagamento);
+
+        if (!estrategiaPagamento.Pagar(valorTotal))
+        {
+            _notificacao.InformarErro("❌ Falha no processamento do pagamento.");
+            return null;
+        }
+
         var reserva = new Reserva
         {
             HospedeNome = nomeHospede,
@@ -177,10 +195,19 @@ public class GerenciadorReservas : IGerenciadorReservas
             DataEntrada = entrada,
             DataSaida = saida,
             Pacote = pacote,
-            ValorTotal = pacote.CalcularValorTotal(dias)
+            ValorTotal = valorTotal,
+            MetodoPagamento = estrategiaPagamento.Nome
         };
 
         _repositorio.Adicionar(reserva);
+
+        var subject = new ReservaSubject(reserva);
+        foreach (var observador in _observadores)
+        {
+            subject.Anexar(observador);
+        }
+        subject.Notificar();
+
         return reserva;
     }
 }

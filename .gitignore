@@ -87,9 +87,3 @@ ClientBin/
 *.publishsettings
 orleans.codegen.cs
 
-# Image files
-*.svg
-*.png
-*.jpg
-*.jpeg
-*.gif

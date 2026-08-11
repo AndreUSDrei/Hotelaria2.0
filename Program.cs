@@ -1,6 +1,9 @@
+using System.IO;
+using Microsoft.EntityFrameworkCore;
 using SistemaHotelaria.Services;
 using SistemaHotelaria.Services.Facade;
 using SistemaHotelaria.Services.Notifications;
+using SistemaHotelaria.Services.Observer;
 using SistemaHotelaria.Services.Persistence;
 using SistemaHotelaria.Services.Proxies;
 
@@ -9,8 +12,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddLogging();
 
-// Adapter: persistência, inventário e notificações (todos os adapters registrados)
-builder.Services.AddSingleton<IReservaRepository, InMemoryReservaRepository>();
+var dbPath = Path.Combine(builder.Environment.ContentRootPath, "hotelaria.db");
+
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlite($"Data Source={dbPath}"));
+
+builder.Services.AddScoped<IReservaRepository, EntityFrameworkReservaRepository>();
 builder.Services.AddSingleton<IInventarioQuartos, InMemoryInventarioQuartosAdapter>();
 builder.Services.AddSingleton<ReservaNotificacaoAdapter>();
 builder.Services.AddSingleton<INotificacaoReserva>(_ =>
@@ -18,10 +25,12 @@ builder.Services.AddSingleton<INotificacaoReserva>(_ =>
         new ConsoleNotificacaoAdapter(),
         new WebNotificacaoAdapter()));
 
-// Serviço real de reservas
-builder.Services.AddSingleton<GerenciadorReservas>();
+builder.Services.AddSingleton<IObserver, EmailObserver>();
+builder.Services.AddSingleton<IObserver, LimpezaObserver>();
+builder.Services.AddSingleton<IObserver, RecepcaoObserver>();
 
-// Proxy: validação/log → cache de disponibilidade
+builder.Services.AddScoped<GerenciadorReservas>();
+
 builder.Services.AddSingleton<IGerenciadorReservas>(sp =>
 {
     var real = sp.GetRequiredService<GerenciadorReservas>();
@@ -32,10 +41,15 @@ builder.Services.AddSingleton<IGerenciadorReservas>(sp =>
 
 builder.Services.AddSingleton<HotelService>();
 
-// Facade: único ponto de entrada dos controllers
 builder.Services.AddSingleton<IReservaFacade, ReservaFacade>();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    db.Database.EnsureCreated();
+}
 
 if (!app.Environment.IsDevelopment())
 {

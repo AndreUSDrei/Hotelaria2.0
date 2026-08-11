@@ -13,6 +13,7 @@ public class Reserva
     public decimal ValorTotal { get; set; }
     public bool CheckInRealizado { get; set; }
     public bool CheckOutRealizado { get; set; }
+    public string MetodoPagamento { get; set; } = "Pix";
 
     public void ExibirDetalhes()
     {
@@ -21,6 +22,7 @@ public class Reserva
         Console.WriteLine($"   Período: {DataEntrada:dd/MM/yyyy} a {DataSaida:dd/MM/yyyy}");
         Console.WriteLine($"   Status: {(CheckInRealizado ? "✅ Check-in" : "⏳ Aguardando")} / {(CheckOutRealizado ? "✅ Check-out" : "⏳ Aguardando")}");
         Console.WriteLine($"   Valor Total: R$ {ValorTotal:N2}");
+        Console.WriteLine($"   Pagamento: {MetodoPagamento}");
         Pacote?.ExibirDetalhes();
     }
 }

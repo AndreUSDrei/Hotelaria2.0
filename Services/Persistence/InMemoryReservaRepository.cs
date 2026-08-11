@@ -15,6 +15,16 @@ public class InMemoryReservaRepository : IReservaRepository
 
     public void Adicionar(Reserva reserva) => _reservas.Add(reserva);
 
+    public void Atualizar(Reserva reserva)
+    {
+        var existente = _reservas.FirstOrDefault(r => r.Id == reserva.Id);
+        if (existente == null)
+            return;
+
+        existente.CheckInRealizado = reserva.CheckInRealizado;
+        existente.CheckOutRealizado = reserva.CheckOutRealizado;
+    }
+
     public int ContarConflitos(string tipoQuarto, DateTime dataEntrada, DateTime dataSaida) =>
         _reservas.Count(r =>
             r.TipoQuarto == tipoQuarto &&

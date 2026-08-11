@@ -74,13 +74,13 @@ public class GerenciadorReservasProxy : IGerenciadorReservas
         return _real.ObterDisponibilidadeCompleta(entrada, saida);
     }
 
-    public Reserva? CriarReservaWeb(string nomeHospede, string tipoQuarto, DateTime entrada, DateTime saida, PacoteHospedagem pacote)
+    public Reserva? CriarReservaWeb(string nomeHospede, string tipoQuarto, DateTime entrada, DateTime saida, PacoteHospedagem pacote, string metodoPagamento = "Pix")
     {
         if (!DatasValidas(entrada, saida))
             return null;
 
         _logger.LogInformation("Criando reserva web para {Hospede}, quarto {Tipo}", nomeHospede, tipoQuarto);
-        return _real.CriarReservaWeb(nomeHospede, tipoQuarto, entrada, saida, pacote);
+        return _real.CriarReservaWeb(nomeHospede, tipoQuarto, entrada, saida, pacote, metodoPagamento);
     }
 
     private static bool DatasValidas(DateTime entrada, DateTime saida) =>

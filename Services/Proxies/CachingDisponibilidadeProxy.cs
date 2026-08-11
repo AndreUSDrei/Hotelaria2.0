@@ -73,10 +73,10 @@ public class CachingDisponibilidadeProxy : IGerenciadorReservas
 
     public Models.Reserva? ObterReservaPorId(string id) => _real.ObterReservaPorId(id);
 
-    public Models.Reserva? CriarReservaWeb(string nomeHospede, string tipoQuarto, DateTime entrada, DateTime saida, Builder.PacoteHospedagem pacote)
+    public Models.Reserva? CriarReservaWeb(string nomeHospede, string tipoQuarto, DateTime entrada, DateTime saida, Builder.PacoteHospedagem pacote, string metodoPagamento = "Pix")
     {
         InvalidarCacheDisponibilidade();
-        return _real.CriarReservaWeb(nomeHospede, tipoQuarto, entrada, saida, pacote);
+        return _real.CriarReservaWeb(nomeHospede, tipoQuarto, entrada, saida, pacote, metodoPagamento);
     }
 
     private bool TryObterCache<T>(string chave, out T valor)
