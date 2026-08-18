@@ -136,6 +136,52 @@
         </p>
     </div>
 
+    <div class="pagamento-section">
+        <h4>💳 Forma de pagamento</h4>
+        <p class="pagamento-hint">Escolha como deseja pagar. A reserva só é confirmada após o processamento.</p>
+
+        <div class="pagamento-grid">
+            <label class="pagamento-option">
+                <input type="radio" name="metodoPagamento" value="pix" checked />
+                <span class="pagamento-card">
+                    <span class="pagamento-icon">⚡</span>
+                    <strong>Pix</strong>
+                    <small>Aprovação instantânea</small>
+                </span>
+            </label>
+            <label class="pagamento-option">
+                <input type="radio" name="metodoPagamento" value="cartao" />
+                <span class="pagamento-card">
+                    <span class="pagamento-icon">💳</span>
+                    <strong>Cartão</strong>
+                    <small>Autorização em 1x</small>
+                </span>
+            </label>
+            <label class="pagamento-option">
+                <input type="radio" name="metodoPagamento" value="boleto" />
+                <span class="pagamento-card">
+                    <span class="pagamento-icon">🏷️</span>
+                    <strong>Boleto</strong>
+                    <small>Compensação simulada</small>
+                </span>
+            </label>
+        </div>
+
+        <div class="cartao-campos" id="camposCartao" hidden>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Número do cartão (simulação)</label>
+                    <input type="text" name="numeroCartao" class="form-control" placeholder="4111 1111 1111 1111" maxlength="19" />
+                </div>
+                <div class="form-group">
+                    <label>CVV</label>
+                    <input type="text" name="cvv" class="form-control" placeholder="123" maxlength="4" />
+                </div>
+            </div>
+            <p class="pagamento-nota">Nenhum dado é enviado a operadora real. Serve só para exemplificar a estratégia de cartão.</p>
+        </div>
+    </div>
+
     <button type="submit" class="btn btn-primary btn-lg">Criar Reserva</button>
     <a href="~/Reservas" class="btn btn-secondary">Cancelar</a>
 </form>
@@ -279,6 +325,101 @@
         border-radius: 4px;
         border-left: 3px solid #C9A962;
     }
+
+    .pagamento-section {
+        margin-top: 2rem;
+        margin-bottom: 1.5rem;
+        padding: 1.5rem;
+        background: linear-gradient(135deg, #16213E08 0%, #C9A96212 100%);
+        border-left: 4px solid #1A1A2E;
+        border-radius: 8px;
+    }
+
+    .pagamento-section h4 {
+        color: #1A1A2E;
+        margin-bottom: 0.4rem;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+
+    .pattern-badge {
+        background: #1A1A2E;
+        color: #E8D5A3;
+        font-family: 'Montserrat', sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 0.2rem 0.55rem;
+        border-radius: 999px;
+        font-weight: 700;
+    }
+
+    .pagamento-hint {
+        color: #666;
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+    }
+
+    .pagamento-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.8rem;
+        margin-bottom: 1rem;
+    }
+
+    .pagamento-option {
+        cursor: pointer;
+    }
+
+    .pagamento-option input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .pagamento-card {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        padding: 1rem;
+        background: white;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        min-height: 110px;
+    }
+
+    .pagamento-option input:checked + .pagamento-card {
+        border-color: #C9A962;
+        box-shadow: 0 2px 10px rgba(201, 169, 98, 0.25);
+        background: #FFFBF2;
+    }
+
+    .pagamento-icon {
+        font-size: 1.4rem;
+    }
+
+    .pagamento-card small {
+        color: #666;
+        font-size: 0.78rem;
+    }
+
+    .cartao-campos {
+        margin-top: 0.5rem;
+    }
+
+    .pagamento-nota {
+        font-size: 0.8rem;
+        color: #666;
+        margin-top: -0.5rem;
+    }
+
+    @@media (max-width: 700px) {
+        .pagamento-grid {
+            grid-template-columns: 1fr;
+        }
+    }
 </style>
 
 <script>
@@ -316,5 +457,18 @@
         
         // Ouvir mudanças no pacote
         tipoPacote.addEventListener('change', atualizarEstadoQuarto);
+
+        const camposCartao = document.getElementById('camposCartao');
+        const radiosPagamento = document.querySelectorAll('input[name="metodoPagamento"]');
+
+        function atualizarCamposCartao() {
+            const selecionado = document.querySelector('input[name="metodoPagamento"]:checked');
+            camposCartao.hidden = !selecionado || selecionado.value !== 'cartao';
+        }
+
+        radiosPagamento.forEach(function (radio) {
+            radio.addEventListener('change', atualizarCamposCartao);
+        });
+        atualizarCamposCartao();
     });
 </script>

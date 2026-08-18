@@ -17,4 +17,8 @@ public class ReservaEntity
     public string PacoteDescricao { get; set; } = string.Empty;
     public decimal PacoteDescontoPercentual { get; set; }
     public string MetodoPagamento { get; set; } = "Pix";
+    public string PagamentoTransacaoId { get; set; } = string.Empty;
+    public string PagamentoComprovante { get; set; } = string.Empty;
+    public string StatusReserva { get; set; } = "Confirmada";
+    public string EventosReserva { get; set; } = string.Empty;
 }

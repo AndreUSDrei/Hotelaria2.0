@@ -14,7 +14,7 @@ public class ReservaNotificacaoAdapter
         notificacao.Informar($"   Quarto: {reserva.TipoQuarto}");
         notificacao.Informar($"   Período: {reserva.DataEntrada:dd/MM/yyyy} a {reserva.DataSaida:dd/MM/yyyy}");
         notificacao.Informar(
-            $"   Status: {(reserva.CheckInRealizado ? "✅ Check-in" : "⏳ Aguardando")} / {(reserva.CheckOutRealizado ? "✅ Check-out" : "⏳ Aguardando")}");
+            $"   Status: {reserva.Status}");
         notificacao.Informar($"   Valor Total: R$ {reserva.ValorTotal:N2}");
 
         if (reserva.Pacote == null)

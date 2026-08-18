@@ -25,9 +25,9 @@ builder.Services.AddSingleton<INotificacaoReserva>(_ =>
         new ConsoleNotificacaoAdapter(),
         new WebNotificacaoAdapter()));
 
-builder.Services.AddSingleton<IObserver, EmailObserver>();
-builder.Services.AddSingleton<IObserver, LimpezaObserver>();
-builder.Services.AddSingleton<IObserver, RecepcaoObserver>();
+builder.Services.AddSingleton<IObserver, ServicoEmail>();
+builder.Services.AddSingleton<IObserver, ServicoLimpeza>();
+builder.Services.AddSingleton<IObserver, Recepcao>();
 
 builder.Services.AddScoped<GerenciadorReservas>();
 
@@ -49,6 +49,30 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     db.Database.EnsureCreated();
+    GarantirColunasPagamentoEObserver(db);
+}
+
+static void GarantirColunasPagamentoEObserver(ApplicationDbContext db)
+{
+    string[] sqls =
+    [
+        "ALTER TABLE Reservas ADD COLUMN PagamentoTransacaoId TEXT DEFAULT ''",
+        "ALTER TABLE Reservas ADD COLUMN PagamentoComprovante TEXT DEFAULT ''",
+        "ALTER TABLE Reservas ADD COLUMN StatusReserva TEXT DEFAULT 'Confirmada'",
+        "ALTER TABLE Reservas ADD COLUMN EventosReserva TEXT DEFAULT ''"
+    ];
+
+    foreach (var sql in sqls)
+    {
+        try
+        {
+            db.Database.ExecuteSqlRaw(sql);
+        }
+        catch
+        {
+            // Coluna já existe no banco atual.
+        }
+    }
 }
 
 if (!app.Environment.IsDevelopment())

@@ -27,9 +27,11 @@ public class ReservasController : Controller
 
     [HttpPost]
     public IActionResult Criar(string hospedeNome, string tipoQuarto, string tipoPacote,
-                               DateTime dataEntrada, DateTime dataSaida)
+                               DateTime dataEntrada, DateTime dataSaida, string metodoPagamento = "pix",
+                               string? numeroCartao = null, string? cvv = null)
     {
-        var reserva = _reservaFacade.CriarReservaComPacote(hospedeNome, tipoQuarto, tipoPacote, dataEntrada, dataSaida);
+        var reserva = _reservaFacade.CriarReservaComPacote(hospedeNome, tipoQuarto, tipoPacote, dataEntrada, dataSaida,
+            metodoPagamento, numeroCartao, cvv);
 
         if (reserva == null)
         {
@@ -41,7 +43,7 @@ public class ReservasController : Controller
         }
 
         var pacoteMsg = string.IsNullOrEmpty(tipoPacote) ? "" : $" com pacote {tipoPacote}";
-        TempData["Sucesso"] = $"Reserva #{reserva.Id} criada com sucesso{pacoteMsg}!";
+        TempData["Sucesso"] = $"Reserva #{reserva.Id} confirmada{pacoteMsg}. Pagamento via {reserva.MetodoPagamento} aprovado.";
         return RedirectToAction(nameof(Detalhes), new { id = reserva.Id });
     }
 
@@ -64,14 +66,15 @@ public class ReservasController : Controller
     [HttpPost]
     public IActionResult CriarComDecorators(string hospedeNome, string tipoQuarto, string tipoPacote,
                                              DateTime dataEntrada, DateTime dataSaida,
-                                             List<string> decorators)
+                                             List<string> decorators, string metodoPagamento = "pix",
+                                             string? numeroCartao = null, string? cvv = null)
     {
         // Se não houver decorators selecionados, inicializa lista vazia
         decorators ??= new List<string>();
 
-        // Chama o método da Facade que integra Builder + Decorator
         var reserva = _reservaFacade.CriarReservaComPacoteEDecorators(
-            hospedeNome, tipoQuarto, tipoPacote, dataEntrada, dataSaida, decorators);
+            hospedeNome, tipoQuarto, tipoPacote, dataEntrada, dataSaida, decorators,
+            metodoPagamento, numeroCartao, cvv);
 
         if (reserva == null)
         {
@@ -82,10 +85,9 @@ public class ReservasController : Controller
             return RedirectToAction(nameof(Criar));
         }
 
-        // Monta mensagem de sucesso incluindo os decorators selecionados
         var pacoteMsg = string.IsNullOrEmpty(tipoPacote) ? "" : $" com pacote {tipoPacote}";
         var decoratorsMsg = decorators.Any() ? $" + serviços extras: {string.Join(", ", decorators)}" : "";
-        TempData["Sucesso"] = $"Reserva #{reserva.Id} criada com sucesso{pacoteMsg}{decoratorsMsg}!";
+        TempData["Sucesso"] = $"Reserva #{reserva.Id} confirmada{pacoteMsg}{decoratorsMsg}. Equipes do hotel foram acionadas.";
         
         return RedirectToAction(nameof(Detalhes), new { id = reserva.Id });
     }
@@ -104,7 +106,7 @@ public class ReservasController : Controller
     {
         var sucesso = _reservaFacade.RealizarCheckIn(id);
         if (sucesso)
-            TempData["Sucesso"] = "Check-in realizado com sucesso!";
+            TempData["Sucesso"] = "Check-in realizado. E-mail, Limpeza e Recepção foram atualizados.";
         else
             TempData["Erro"] = "Não foi possível realizar o check-in";
 
@@ -116,7 +118,7 @@ public class ReservasController : Controller
     {
         var sucesso = _reservaFacade.RealizarCheckOut(id);
         if (sucesso)
-            TempData["Sucesso"] = "Check-out realizado com sucesso!";
+            TempData["Sucesso"] = "Check-out realizado. E-mail, Limpeza e Recepção foram atualizados.";
         else
             TempData["Erro"] = "Não foi possível realizar o check-out";
 

@@ -22,6 +22,7 @@ else
                 <th>Entrada</th>
                 <th>Saída</th>
                 <th>Valor</th>
+                <th>Pagamento</th>
                 <th>Status</th>
                 <th>Ações</th>
             </tr>
@@ -36,20 +37,8 @@ else
                     <td>@r.DataEntrada.ToString("dd/MM/yyyy")</td>
                     <td>@r.DataSaida.ToString("dd/MM/yyyy")</td>
                     <td>R$ @r.ValorTotal.ToString("N2")</td>
-                    <td>
-                        @if (r.CheckOutRealizado)
-                        {
-                            <span class="badge badge-success">Finalizada</span>
-                        }
-                        else if (r.CheckInRealizado)
-                        {
-                            <span class="badge badge-warning">Em estadia</span>
-                        }
-                        else
-                        {
-                            <span class="badge badge-info">Reservada</span>
-                        }
-                    </td>
+                    <td>@r.MetodoPagamento</td>
+                    <td>@r.Status</td>
                     <td>
                         <a href="~/Reservas/Detalhes/@r.Id" class="btn btn-sm">Ver</a>
                     </td>

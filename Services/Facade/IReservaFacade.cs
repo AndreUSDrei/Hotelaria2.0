@@ -12,7 +12,8 @@ public interface IReservaFacade
     List<Reserva> ObterTodasReservas();
     Reserva? ObterReservaPorId(string id);
     Reserva? CriarReservaComPacote(string hospedeNome, string tipoQuarto, string tipoPacote,
-        DateTime dataEntrada, DateTime dataSaida);
+        DateTime dataEntrada, DateTime dataSaida, string metodoPagamento = "pix",
+        string? numeroCartao = null, string? cvv = null);
     
     // ============================================================
     // NOVO MÉTODO - Integração com Padrão Decorator
@@ -28,7 +29,8 @@ public interface IReservaFacade
     // padrões (Builder, Facade) de forma harmoniosa.
     // ============================================================
     Reserva? CriarReservaComPacoteEDecorators(string hospedeNome, string tipoQuarto, string tipoPacote,
-        DateTime dataEntrada, DateTime dataSaida, List<string> decorators);
+        DateTime dataEntrada, DateTime dataSaida, List<string> decorators, string metodoPagamento = "pix",
+        string? numeroCartao = null, string? cvv = null);
     
     bool RealizarCheckIn(string id);
     bool RealizarCheckOut(string id);

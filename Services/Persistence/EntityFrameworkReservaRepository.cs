@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using SistemaHotelaria.Builder;
 using SistemaHotelaria.Models;
@@ -6,6 +7,8 @@ namespace SistemaHotelaria.Services.Persistence;
 
 public class EntityFrameworkReservaRepository : IReservaRepository
 {
+    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
     private readonly ApplicationDbContext _context;
 
     public EntityFrameworkReservaRepository(ApplicationDbContext context)
@@ -42,6 +45,12 @@ public class EntityFrameworkReservaRepository : IReservaRepository
 
         entity.CheckInRealizado = reserva.CheckInRealizado;
         entity.CheckOutRealizado = reserva.CheckOutRealizado;
+        entity.ValorTotal = reserva.ValorTotal;
+        entity.MetodoPagamento = reserva.MetodoPagamento;
+        entity.PagamentoTransacaoId = reserva.PagamentoTransacaoId;
+        entity.PagamentoComprovante = reserva.PagamentoComprovante;
+        entity.StatusReserva = reserva.Status;
+        entity.EventosReserva = SerializarEventos(reserva.Eventos);
         _context.SaveChanges();
     }
 
@@ -56,6 +65,10 @@ public class EntityFrameworkReservaRepository : IReservaRepository
 
     private static Reserva MapearParaReserva(ReservaEntity entity)
     {
+        var status = string.IsNullOrWhiteSpace(entity.StatusReserva)
+            ? DerivarStatus(entity.CheckInRealizado, entity.CheckOutRealizado)
+            : entity.StatusReserva;
+
         return new Reserva
         {
             Id = entity.Id,
@@ -67,6 +80,10 @@ public class EntityFrameworkReservaRepository : IReservaRepository
             CheckInRealizado = entity.CheckInRealizado,
             CheckOutRealizado = entity.CheckOutRealizado,
             MetodoPagamento = entity.MetodoPagamento,
+            PagamentoTransacaoId = entity.PagamentoTransacaoId ?? string.Empty,
+            PagamentoComprovante = entity.PagamentoComprovante ?? string.Empty,
+            Status = status,
+            Eventos = DesserializarEventos(entity.EventosReserva),
             Pacote = new PacoteHospedagem
             {
                 Nome = entity.PacoteNome,
@@ -89,9 +106,34 @@ public class EntityFrameworkReservaRepository : IReservaRepository
             CheckInRealizado = reserva.CheckInRealizado,
             CheckOutRealizado = reserva.CheckOutRealizado,
             MetodoPagamento = reserva.MetodoPagamento,
+            PagamentoTransacaoId = reserva.PagamentoTransacaoId,
+            PagamentoComprovante = reserva.PagamentoComprovante,
+            StatusReserva = reserva.Status,
+            EventosReserva = SerializarEventos(reserva.Eventos),
             PacoteNome = reserva.Pacote?.Nome ?? string.Empty,
             PacoteDescricao = reserva.Pacote?.Descricao ?? string.Empty,
             PacoteDescontoPercentual = reserva.Pacote?.DescontoPercentual ?? 0m
         };
+    }
+
+    private static string DerivarStatus(bool checkIn, bool checkOut) =>
+        checkOut ? "Check-out" : checkIn ? "Check-in" : "Confirmada";
+
+    private static string SerializarEventos(List<EventoReserva> eventos) =>
+        JsonSerializer.Serialize(eventos ?? new List<EventoReserva>(), JsonOptions);
+
+    private static List<EventoReserva> DesserializarEventos(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+            return new List<EventoReserva>();
+
+        try
+        {
+            return JsonSerializer.Deserialize<List<EventoReserva>>(json, JsonOptions) ?? new List<EventoReserva>();
+        }
+        catch
+        {
+            return new List<EventoReserva>();
+        }
     }
 }

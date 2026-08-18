@@ -37,7 +37,8 @@ public class ReservaFacade : IReservaFacade
     public int ContarReservasAtivas() => _gerenciador.ObterTodasReservas().Count;
 
     public Reserva? CriarReservaComPacote(string hospedeNome, string tipoQuarto, string tipoPacote,
-        DateTime dataEntrada, DateTime dataSaida)
+        DateTime dataEntrada, DateTime dataSaida, string metodoPagamento = "pix",
+        string? numeroCartao = null, string? cvv = null)
     {
         var tipoQuartoFinal = tipoQuarto;
         if (!string.IsNullOrEmpty(tipoPacote) && string.IsNullOrEmpty(tipoQuarto))
@@ -51,7 +52,8 @@ public class ReservaFacade : IReservaFacade
         var director = new HotelDirector(builder);
         ConstruirPacote(director, tipoPacote, quarto);
 
-        return _gerenciador.CriarReservaWeb(hospedeNome, tipoQuartoFinal, dataEntrada, dataSaida, director.ObterPacote());
+        return _gerenciador.CriarReservaWeb(hospedeNome, tipoQuartoFinal, dataEntrada, dataSaida, director.ObterPacote(),
+            metodoPagamento, numeroCartao, cvv);
     }
 
     private static void ConstruirPacote(HotelDirector director, string tipoPacote, IQuarto quarto)
@@ -95,7 +97,8 @@ public class ReservaFacade : IReservaFacade
     // cadeia de responsabilidades.
     // ============================================================
     public Reserva? CriarReservaComPacoteEDecorators(string hospedeNome, string tipoQuarto, string tipoPacote,
-        DateTime dataEntrada, DateTime dataSaida, List<string> decorators)
+        DateTime dataEntrada, DateTime dataSaida, List<string> decorators, string metodoPagamento = "pix",
+        string? numeroCartao = null, string? cvv = null)
     {
         // Passo 1: Cria o pacote base usando Builder (mesmo processo do método original)
         var tipoQuartoFinal = tipoQuarto;
@@ -198,7 +201,8 @@ public class ReservaFacade : IReservaFacade
         // IMPORTANTE: O gerenciador não precisa saber sobre decorators.
         // Ele apenas recebe um PacoteHospedagem, que pode ou não ter
         // sido decorado. Isso é encapsulamento!
-        var reserva = _gerenciador.CriarReservaWeb(hospedeNome, tipoQuartoFinal, dataEntrada, dataSaida, pacote);
+        var reserva = _gerenciador.CriarReservaWeb(hospedeNome, tipoQuartoFinal, dataEntrada, dataSaida, pacote,
+            metodoPagamento, numeroCartao, cvv);
         
         // Se a reserva foi criada, atualiza o valor total com o cálculo dos decorators
         if (reserva != null)

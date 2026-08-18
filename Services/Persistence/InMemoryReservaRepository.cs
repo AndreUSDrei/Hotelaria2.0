@@ -23,6 +23,12 @@ public class InMemoryReservaRepository : IReservaRepository
 
         existente.CheckInRealizado = reserva.CheckInRealizado;
         existente.CheckOutRealizado = reserva.CheckOutRealizado;
+        existente.ValorTotal = reserva.ValorTotal;
+        existente.MetodoPagamento = reserva.MetodoPagamento;
+        existente.PagamentoTransacaoId = reserva.PagamentoTransacaoId;
+        existente.PagamentoComprovante = reserva.PagamentoComprovante;
+        existente.Status = reserva.Status;
+        existente.Eventos = reserva.Eventos;
     }
 
     public int ContarConflitos(string tipoQuarto, DateTime dataEntrada, DateTime dataSaida) =>

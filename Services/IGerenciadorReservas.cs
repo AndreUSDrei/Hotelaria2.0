@@ -17,5 +17,6 @@ public interface IGerenciadorReservas
     List<Reserva> ObterTodasReservas();
     Reserva? ObterReservaPorId(string id);
     Dictionary<string, int> ObterDisponibilidadeCompleta(DateTime entrada, DateTime saida);
-    Reserva? CriarReservaWeb(string nomeHospede, string tipoQuarto, DateTime entrada, DateTime saida, PacoteHospedagem pacote, string metodoPagamento = "Pix");
+    Reserva? CriarReservaWeb(string nomeHospede, string tipoQuarto, DateTime entrada, DateTime saida, PacoteHospedagem pacote,
+        string metodoPagamento = "Pix", string? numeroCartao = null, string? cvv = null);
 }
