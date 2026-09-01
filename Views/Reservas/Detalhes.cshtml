@@ -1,140 +1,139 @@
-@model Reserva
-@{
-    ViewData["Title"] = $"Reserva #{Model.Id}";
-    var statusAtual = Model.Status;
-}
-
-<h1>📋 Reserva #@Model.Id</h1>
-
-<div class="reserva-detalhes">
-    <div class="card">
-        <h3>Informações Gerais</h3>
-        <p><strong>Hóspede:</strong> @Model.HospedeNome</p>
-        <p><strong>Período:</strong> @Model.DataEntrada.ToString("dd/MM/yyyy") a @Model.DataSaida.ToString("dd/MM/yyyy")</p>
-        <p><strong>Quarto:</strong> @Model.TipoQuarto</p>
-        <p><strong>Valor Total:</strong> <span class="valor-total">R$ @Model.ValorTotal.ToString("N2")</span></p>
-        <p><strong>Situação:</strong> <span class="badge badge-info">@statusAtual</span></p>
-    </div>
-
-    <div class="card">
-        <h3>💳 Pagamento</h3>
-        @if (string.IsNullOrWhiteSpace(Model.PagamentoComprovante))
-        {
-            <p>Método: <strong>@Model.MetodoPagamento</strong></p>
-        }
-        else
-        {
-            <div class="comprovante-resumo">
-                <span class="comprovante-metodo">@Model.MetodoPagamento</span>
-                <span class="comprovante-id">@Model.PagamentoTransacaoId</span>
-            </div>
-            <ul class="comprovante-lista">
-                @foreach (var parte in Model.PagamentoComprovante.Split(" | ", StringSplitOptions.RemoveEmptyEntries))
-                {
-                    <li>@parte</li>
-                }
-            </ul>
-        }
-    </div>
-
-    <div class="card">
-        <h3>Linha do tempo da estadia</h3>
-        <div class="status-timeline">
-            <div class="status-item @(Model.Status is "Confirmada" or "Check-in" or "Check-out" ? "completed" : "pending")">
-                <span class="icon">@(Model.Status is "Confirmada" or "Check-in" or "Check-out" ? "✅" : "⏳")</span>
-                <span>Confirmada</span>
-            </div>
-            <div class="status-item @(Model.CheckInRealizado ? "completed" : "pending")">
-                <span class="icon">@(Model.CheckInRealizado ? "✅" : "⏳")</span>
-                <span>Check-in</span>
-            </div>
-            <div class="status-item @(Model.CheckOutRealizado ? "completed" : "pending")">
-                <span class="icon">@(Model.CheckOutRealizado ? "✅" : "⏳")</span>
-                <span>Check-out</span>
-            </div>
-        </div>
-    </div>
-
-    @if (Model.Eventos.Any())
-    {
-        <div class="card timeline-eventos">
-            <h3>Equipes acionadas</h3>
-            <p class="muted">Quando o status muda, a reserva notifica E-mail, Limpeza e Recepção.</p>
-
-            @foreach (var evento in Model.Eventos)
-            {
-                <div class="evento-grupo">
-                    <div class="evento-cabecalho">
-                        <span class="evento-status">@evento.Status</span>
-                        <span class="evento-hora">@evento.Quando.ToString("dd/MM HH:mm")</span>
-                    </div>
-                    <div class="servicos-grid">
-                        @foreach (var acao in evento.Acoes)
-                        {
-                            <div class="servico-card">
-                                <span class="servico-icone">@acao.Icone</span>
-                                <div>
-                                    <strong>@acao.Servico</strong>
-                                    <p>@acao.Descricao</p>
-                                </div>
-                            </div>
-                        }
-                    </div>
-                </div>
-            }
-        </div>
-    }
-
-    @if (Model.Pacote != null)
-    {
-        <div class="card">
-            <h3>📦 @Model.Pacote.Nome</h3>
-            <p>@Model.Pacote.Descricao</p>
-
-            @if (Model.Pacote.DescontoPercentual > 0)
-            {
-                <p><strong>Desconto:</strong> @Model.Pacote.DescontoPercentual%</p>
-            }
-
-            @if (Model.Pacote.Refeicoes.Any())
-            {
-                <h4>🍽️ Refeições Incluídas:</h4>
-                <ul>
-                    @foreach (var r in Model.Pacote.Refeicoes)
-                    {
-                        <li>@r.Nome - @r.Descricao (R$ @r.Preco)</li>
-                    }
-                </ul>
-            }
-
-            @if (Model.Pacote.Servicos.Any())
-            {
-                <h4>✨ Serviços Adicionais:</h4>
-                <ul>
-                    @foreach (var s in Model.Pacote.Servicos)
-                    {
-                        <li>@s.Nome - @s.Descricao (R$ @s.Preco)</li>
-                    }
-                </ul>
-            }
-        </div>
-    }
-
-    <div class="acoes">
-        @if (!Model.CheckInRealizado)
-        {
-            <form method="post" action="~/Reservas/CheckIn/@Model.Id" style="display:inline">
-                <button type="submit" class="btn btn-success">✅ Realizar Check-in</button>
-            </form>
-        }
-        else if (!Model.CheckOutRealizado)
-        {
-            <form method="post" action="~/Reservas/CheckOut/@Model.Id" style="display:inline">
-                <button type="submit" class="btn btn-warning">👋 Realizar Check-out</button>
-            </form>
-        }
-
-        <a href="~/Reservas" class="btn btn-secondary">Voltar</a>
-    </div>
-</div>
-
+@model Reserva
+@{
+    ViewData["Title"] = $"Reserva #{Model.Id}";
+    var statusAtual = Model.EstadoAtual.Nome;
+}
+
+<h1>📋 Reserva #@Model.Id</h1>
+
+<div class="reserva-detalhes">
+    <div class="card">
+        <h3>Informações Gerais</h3>
+        <p><strong>Hóspede:</strong> @Model.HospedeNome</p>
+        <p><strong>Período:</strong> @Model.DataEntrada.ToString("dd/MM/yyyy") a @Model.DataSaida.ToString("dd/MM/yyyy")</p>
+        <p><strong>Quarto:</strong> @Model.TipoQuarto</p>
+        <p><strong>Valor Total:</strong> <span class="valor-total">R$ @Model.ValorTotal.ToString("N2")</span></p>
+        <p><strong>Situação:</strong> <span class="badge badge-info">@statusAtual</span></p>
+    </div>
+
+    <div class="card">
+        <h3>💳 Pagamento</h3>
+        @if (string.IsNullOrWhiteSpace(Model.PagamentoComprovante))
+        {
+            <p>Método: <strong>@Model.MetodoPagamento</strong></p>
+        }
+        else
+        {
+            <div class="comprovante-resumo">
+                <span class="comprovante-metodo">@Model.MetodoPagamento</span>
+                <span class="comprovante-id">@Model.PagamentoTransacaoId</span>
+            </div>
+            <ul class="comprovante-lista">
+                @foreach (var parte in Model.PagamentoComprovante.Split(" | ", StringSplitOptions.RemoveEmptyEntries))
+                {
+                    <li>@parte</li>
+                }
+            </ul>
+        }
+    </div>
+
+    <div class="card">
+        <h3>Linha do tempo da estadia</h3>
+        <div class="status-timeline">
+            <div class="status-item @(Model.EstadoAtual.Nome is "Confirmada" or "Check-in" or "Check-out" ? "completed" : "pending")">
+                <span class="icon">@(Model.EstadoAtual.Nome is "Confirmada" or "Check-in" or "Check-out" ? "✅" : "⏳")</span>
+                <span>Confirmada</span>
+            </div>
+            <div class="status-item @(Model.EstadoAtual.Nome is "Check-in" or "Check-out" ? "completed" : "pending")">
+                <span class="icon">@(Model.EstadoAtual.Nome is "Check-in" or "Check-out" ? "✅" : "⏳")</span>
+                <span>Check-in</span>
+            </div>
+            <div class="status-item @(Model.EstadoAtual.Nome is "Check-out" ? "completed" : "pending")">
+                <span class="icon">@(Model.EstadoAtual.Nome is "Check-out" ? "✅" : "⏳")</span>
+                <span>Check-out</span>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.Eventos.Any())
+    {
+        <div class="card timeline-eventos">
+            <h3>Equipes acionadas</h3>
+            <p class="muted">Quando o status muda, a reserva notifica E-mail, Limpeza e Recepção.</p>
+
+            @foreach (var evento in Model.Eventos)
+            {
+                <div class="evento-grupo">
+                    <div class="evento-cabecalho">
+                        <span class="evento-status">@evento.Status</span>
+                        <span class="evento-hora">@evento.Quando.ToString("dd/MM HH:mm")</span>
+                    </div>
+                    <div class="servicos-grid">
+                        @foreach (var acao in evento.Acoes)
+                        {
+                            <div class="servico-card">
+                                <span class="servico-icone">@acao.Icone</span>
+                                <div>
+                                    <strong>@acao.Servico</strong>
+                                    <p>@acao.Descricao</p>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    @if (Model.Pacote != null)
+    {
+        <div class="card">
+            <h3>📦 @Model.Pacote.Nome</h3>
+            <p>@Model.Pacote.Descricao</p>
+
+            @if (Model.Pacote.DescontoPercentual > 0)
+            {
+                <p><strong>Desconto:</strong> @Model.Pacote.DescontoPercentual%</p>
+            }
+
+            @if (Model.Pacote.Refeicoes.Any())
+            {
+                <h4>🍽️ Refeições Incluídas:</h4>
+                <ul>
+                    @foreach (var r in Model.Pacote.Refeicoes)
+                    {
+                        <li>@r.Nome - @r.Descricao (R$ @r.Preco)</li>
+                    }
+                </ul>
+            }
+
+            @if (Model.Pacote.Servicos.Any())
+            {
+                <h4>✨ Serviços Adicionais:</h4>
+                <ul>
+                    @foreach (var s in Model.Pacote.Servicos)
+                    {
+                        <li>@s.Nome - @s.Descricao (R$ @s.Preco)</li>
+                    }
+                </ul>
+            }
+        </div>
+    }
+
+    <div class="acoes">
+        @if (Model.EstadoAtual.Nome == "Confirmada")
+        {
+            <form method="post" action="~/Reservas/CheckIn/@Model.Id" style="display:inline">
+                <button type="submit" class="btn btn-success">✅ Realizar Check-in</button>
+            </form>
+        }
+        else if (Model.EstadoAtual.Nome == "Check-in")
+        {
+            <form method="post" action="~/Reservas/CheckOut/@Model.Id" style="display:inline">
+                <button type="submit" class="btn btn-warning">👋 Realizar Check-out</button>
+            </form>
+        }
+
+        <a href="~/Reservas" class="btn btn-secondary">Voltar</a>
+    </div>
+</div>

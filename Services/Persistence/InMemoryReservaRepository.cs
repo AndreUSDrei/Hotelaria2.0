@@ -21,20 +21,25 @@ public class InMemoryReservaRepository : IReservaRepository
         if (existente == null)
             return;
 
-        existente.CheckInRealizado = reserva.CheckInRealizado;
-        existente.CheckOutRealizado = reserva.CheckOutRealizado;
+        existente.HospedeNome = reserva.HospedeNome;
+        existente.TipoQuarto = reserva.TipoQuarto;
+        existente.DataEntrada = reserva.DataEntrada;
+        existente.DataSaida = reserva.DataSaida;
         existente.ValorTotal = reserva.ValorTotal;
+        existente.AtualizarEstado(reserva.EstadoAtual);
+        existente.Pacote = reserva.Pacote;
         existente.MetodoPagamento = reserva.MetodoPagamento;
         existente.PagamentoTransacaoId = reserva.PagamentoTransacaoId;
         existente.PagamentoComprovante = reserva.PagamentoComprovante;
-        existente.Status = reserva.Status;
         existente.Eventos = reserva.Eventos;
     }
 
-    public int ContarConflitos(string tipoQuarto, DateTime dataEntrada, DateTime dataSaida) =>
-        _reservas.Count(r =>
-            r.TipoQuarto == tipoQuarto &&
-            !r.CheckOutRealizado &&
-            r.DataEntrada < dataSaida &&
+    public int ContarConflitos(string tipoQuarto, DateTime dataEntrada, DateTime dataSaida)
+    {
+        return _reservas.Count(r => 
+            r.TipoQuarto == tipoQuarto && 
+            r.Status != "Check-out" && r.Status != "Cancelada" &&
+            r.DataEntrada < dataSaida && 
             r.DataSaida > dataEntrada);
+    }
 }

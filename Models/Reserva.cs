@@ -1,6 +1,7 @@
 using SistemaHotelaria.Builder;
 using SistemaHotelaria.Services.Observer;
 using SistemaHotelaria.Services.Strategy;
+using SistemaHotelaria.Models.States;
 
 namespace SistemaHotelaria.Models;
 
@@ -17,9 +18,10 @@ public class Reserva : ISubject
     public DateTime DataSaida { get; set; }
     public PacoteHospedagem? Pacote { get; set; }
     public decimal ValorTotal { get; set; }
-    public string Status { get; set; } = "Pendente";
-    public bool CheckInRealizado { get; set; }
-    public bool CheckOutRealizado { get; set; }
+    
+    public IEstadoReserva EstadoAtual { get; set; } = new EstadoConfirmada();
+    public string Status => EstadoAtual.Nome;
+
     public string MetodoPagamento { get; set; } = "Pix";
     public string PagamentoTransacaoId { get; set; } = string.Empty;
     public string PagamentoComprovante { get; set; } = string.Empty;
@@ -39,17 +41,22 @@ public class Reserva : ISubject
             observador.Atualizar(this);
     }
 
-    public void AlterarStatus(string novoStatus)
+    // Delegações para o State
+    public void CheckIn() => EstadoAtual.CheckIn(this);
+    public void CheckOut() => EstadoAtual.CheckOut(this);
+    public void Cancelar() => EstadoAtual.Cancelar(this);
+
+    // Chamado pelas classes de Estado
+    public void AtualizarEstado(IEstadoReserva novoEstado)
     {
-        Status = novoStatus;
-        SincronizarFlags();
+        EstadoAtual = novoEstado;
 
         _acoesPendentes.Clear();
-        Notificar();
+        Notificar(); // Integração perfeita com o Observer
 
         Eventos.Add(new EventoReserva
         {
-            Status = novoStatus,
+            Status = novoEstado.Nome,
             Quando = DateTime.Now,
             Acoes = _acoesPendentes.Select(a => new AcaoServico
             {
@@ -58,6 +65,12 @@ public class Reserva : ISubject
                 Descricao = a.Descricao
             }).ToList()
         });
+    }
+
+    // Usado para forçar o estado ao carregar do EF Core
+    public void DefinirEstadoInicial(IEstadoReserva estado)
+    {
+        EstadoAtual = estado;
     }
 
     public void RegistrarAcao(string servico, string icone, string descricao)
@@ -86,12 +99,6 @@ public class Reserva : ISubject
         PagamentoTransacaoId = resultado.TransacaoId;
         PagamentoComprovante = resultado.ComprovanteTexto;
         return resultado;
-    }
-
-    private void SincronizarFlags()
-    {
-        CheckInRealizado = Status is "Check-in" or "Check-out";
-        CheckOutRealizado = Status == "Check-out";
     }
 
     public void ExibirDetalhes()
