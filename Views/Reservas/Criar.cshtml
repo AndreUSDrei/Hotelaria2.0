@@ -1,11 +1,27 @@
 @{
     ViewData["Title"] = "Nova Reserva";
+    var quartos = ViewBag.Quartos as List<IQuarto>;
+    var tiposPacote = ViewBag.TiposPacote as string[];
 }
 
 <h1>📝 Nova Reserva</h1>
-<p class="subtitle">Crie uma reserva para demonstrar os padrões Observer, Strategy e Composite.</p>
+<p class="subtitle">Selecione um pacote de hospedagem (o quarto já está incluído!) Ou escolha apenas um quarto sem pacote.</p>
 
-<form method="post" class="form-reserva">
+<!-- ============================================================
+     FORMULÁRIO COM SUPORTE A DECORATORS
+     ============================================================
+     O formulário agora envia para a action CriarComDecorators, que
+     aplica o Padrão Decorator para adicionar serviços extras.
+     
+     IMPORTANTE - Checkboxes:
+     Os checkboxes abaixo representam os decorators disponíveis.
+     Quando marcados, são enviados como uma lista de strings para
+     o controller, que aplica os decorators correspondentes.
+     
+     Isso demonstra a integração do padrão Decorator com a camada
+     de apresentação (View) do MVC.
+     ============================================================ -->
+<form method="post" action="CriarComDecorators" class="form-reserva" id="formReserva">
     <div class="form-group">
         <label>Nome do Hóspede</label>
         <input type="text" name="hospedeNome" class="form-control" required />
@@ -24,41 +40,145 @@
         </div>
     </div>
 
-    <div class="form-group">
-        <label>Tipo de Quarto</label>
-        <select name="tipoQuarto" class="form-control" required id="tipoQuarto">
-            <option value="" disabled selected>Selecione um quarto...</option>
-            @foreach (var tipo in ViewBag.TiposQuarto)
+    <div class="form-group" id="grupoQuarto">
+        <label>Tipo de Quarto <span class="hint" id="quartoHint">(será definido pelo pacote)</span></label>
+        <select name="tipoQuarto" id="tipoQuarto" class="form-control">
+            <option value="">Selecione um quarto...</option>
+            @foreach (var q in quartos)
             {
-                var preco = SistemaHotelaria.Models.TipoQuarto.ObterPrecoDiario(tipo);
-                <option value="@tipo" data-preco="@preco">@tipo - R$ @preco:N2/dia</option>
+                <option value="@q.Tipo">@q.Tipo - R$ @q.PrecoBaseDiaria/night</option>
+            }
+        </select>
+        <small class="form-text" id="quartoInfo">Se selecionar um pacote, o quarto será escolhido automaticamente.</small>
+    </div>
+
+    <div class="form-group">
+        <label>Pacote de Hospedagem <span class="hint">(inclui quarto + serviços)</span></label>
+        <select name="tipoPacote" id="tipoPacote" class="form-control">
+            <option value="">Sem pacote - apenas quarto</option>
+            @foreach (var tp in tiposPacote)
+            {
+                <option value="@tp">@tp</option>
             }
         </select>
     </div>
 
-    <div class="form-group">
-        <label>Valor Total (calculado automaticamente)</label>
-        <div class="valor-calculado">
-            <span id="valorTotal">R$ 0,00</span>
-            <small id="detalhesCalculo">Selecione as datas e o tipo de quarto</small>
+    <div class="pacote-info" id="infoPacote">
+        <h4>📦 Tipos de Pacote:</h4>
+        <ul>
+            <li><strong>Romantico:</strong> Café no quarto, spa, decoração especial - <span class="preco-pacote">10% OFF</span></li>
+            <li><strong>Negocios:</strong> Café expresso, sala de reuniões, transfer - <span class="preco-pacote">15% OFF</span></li>
+            <li><strong>Basico:</strong> Café da manhã buffet</li>
+            <li><strong>FimDeSemana:</strong> Café, jantar, academia - <span class="preco-pacote">20% OFF</span></li>
+        </ul>
+        <p class="aviso-pacote"><strong>💡 Dica:</strong> Os pacotes já incluem o quarto! Se escolher um pacote, não precisa selecionar o quarto separadamente.</p>
+    </div>
+
+    <!-- ============================================================
+         SEÇÃO DE DECORATORS - Serviços Extras
+         ============================================================
+         Esta seção permite ao usuário selecionar serviços extras
+         que serão adicionados via Padrão Decorator.
+         
+         IMPORTANTE - Padrão Decorator na Prática:
+         Cada checkbox representa um decorator diferente. Quando marcado,
+         o decorator correspondente é aplicado ao pacote base, adicionando
+         o serviço extra e recalculando o valor total.
+         
+         Isso demonstra a flexibilidade do padrão: o usuário pode combinar
+         qualquer número de serviços extras em tempo de execução.
+         ============================================================ -->
+    <div class="decorators-section">
+        <h4>✨ Serviços Extras (Decorators)</h4>
+        <p class="decorators-hint">Selecione serviços adicionais para personalizar sua estadia:</p>
+        
+        <div class="decorators-grid">
+            <div class="decorator-item">
+                <input type="checkbox" id="decorator-spa" name="decorators" value="Spa" />
+                <label for="decorator-spa">
+                    <span class="decorator-name">🧖 Spa & Bem-estar</span>
+                    <span class="decorator-price">+R$ 150/dia</span>
+                </label>
+                <small>Acesso completo ao spa com massagem relaxante</small>
+            </div>
+            
+            <div class="decorator-item">
+                <input type="checkbox" id="decorator-transfer" name="decorators" value="Transfer" />
+                <label for="decorator-transfer">
+                    <span class="decorator-name">🚗 Transfer Privativo</span>
+                    <span class="decorator-price">+R$ 80 único</span>
+                </label>
+                <small>Transfer aeroporto/hotel (ida e volta)</small>
+            </div>
+            
+            <div class="decorator-item">
+                <input type="checkbox" id="decorator-latecheckout" name="decorators" value="LateCheckout" />
+                <label for="decorator-latecheckout">
+                    <span class="decorator-name">⏰ Late Checkout</span>
+                    <span class="decorator-price">+R$ 50 único</span>
+                </label>
+                <small>Saída tardia até às 14:00 (padrão: 12:00)</small>
+            </div>
+            
+            <div class="decorator-item">
+                <input type="checkbox" id="decorator-petfriendly" name="decorators" value="PetFriendly" />
+                <label for="decorator-petfriendly">
+                    <span class="decorator-name">🐕 Pet Friendly</span>
+                    <span class="decorator-price">+R$ 30/dia</span>
+                </label>
+                <small>Permite 1 pet no quarto (cama e comedouro inclusos)</small>
+            </div>
         </div>
+        
+        <p class="decorators-note">
+            <strong>ℹ️ Nota:</strong> Estes serviços são aplicados usando o Padrão Decorator,
+            permitindo adicionar funcionalidades dinamicamente ao pacote base.
+        </p>
     </div>
 
     <div class="pagamento-section">
-        <h4>💳 Forma de Pagamento (Strategy Pattern)</h4>
-        <p class="pagamento-hint">Escolha o método de pagamento - cada um é uma estratégia diferente.</p>
+        <h4>💳 Forma de pagamento</h4>
+        <p class="pagamento-hint">Escolha como deseja pagar. A reserva só é confirmada após o processamento.</p>
 
         <div class="pagamento-grid">
-            @foreach (var metodo in ViewBag.MetodosPagamento)
-            {
-                <label class="pagamento-option">
-                    <input type="radio" name="metodoPagamento" value="@metodo.ToLower()" 
-                           @(metodo == "Pix" ? "checked" : "") />
-                    <span class="pagamento-card">
-                        <strong>@metodo</strong>
-                    </span>
-                </label>
-            }
+            <label class="pagamento-option">
+                <input type="radio" name="metodoPagamento" value="pix" checked />
+                <span class="pagamento-card">
+                    <span class="pagamento-icon">⚡</span>
+                    <strong>Pix</strong>
+                    <small>Aprovação instantânea</small>
+                </span>
+            </label>
+            <label class="pagamento-option">
+                <input type="radio" name="metodoPagamento" value="cartao" />
+                <span class="pagamento-card">
+                    <span class="pagamento-icon">💳</span>
+                    <strong>Cartão</strong>
+                    <small>Autorização em 1x</small>
+                </span>
+            </label>
+            <label class="pagamento-option">
+                <input type="radio" name="metodoPagamento" value="boleto" />
+                <span class="pagamento-card">
+                    <span class="pagamento-icon">🏷️</span>
+                    <strong>Boleto</strong>
+                    <small>Compensação simulada</small>
+                </span>
+            </label>
+        </div>
+
+        <div class="cartao-campos" id="camposCartao" hidden>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Número do cartão (simulação)</label>
+                    <input type="text" name="numeroCartao" class="form-control" placeholder="4111 1111 1111 1111" maxlength="19" />
+                </div>
+                <div class="form-group">
+                    <label>CVV</label>
+                    <input type="text" name="cvv" class="form-control" placeholder="123" maxlength="4" />
+                </div>
+            </div>
+            <p class="pagamento-nota">Nenhum dado é enviado a operadora real. Serve só para exemplificar a estratégia de cartão.</p>
         </div>
     </div>
 
@@ -72,6 +192,140 @@
         margin-bottom: 2rem;
     }
     
+    .hint {
+        font-size: 0.85rem;
+        color: #C9A962;
+        font-weight: 500;
+    }
+    
+    .form-text {
+        display: block;
+        margin-top: 0.5rem;
+        font-size: 0.85rem;
+        color: #666;
+    }
+    
+    .preco-pacote {
+        background: #27ae60;
+        color: white;
+        padding: 0.2rem 0.6rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: bold;
+    }
+    
+    .aviso-pacote {
+        margin-top: 1rem;
+        padding: 0.8rem;
+        background: linear-gradient(135deg, #C9A96220 0%, #E8D5A320 100%);
+        border-left: 4px solid #C9A962;
+        border-radius: 4px;
+        color: #1A1A2E;
+    }
+    
+    #grupoQuarto.disabled {
+        opacity: 0.6;
+    }
+    
+    #grupoQuarto.disabled select {
+        background-color: #f5f5f5;
+        cursor: not-allowed;
+    }
+    
+    /* ============================================================
+       ESTILOS PARA A SEÇÃO DE DECORATORS
+       ============================================================
+       Estilos para a seção de serviços extras que usa o Padrão Decorator.
+       
+       IMPORTANTE - Design System:
+       Os estilos seguem a paleta de cores do hotel (dourado + azul marinho)
+       para manter consistência visual com o restante da aplicação.
+       ============================================================ */
+    .decorators-section {
+        margin-top: 2rem;
+        padding: 1.5rem;
+        background: linear-gradient(135deg, #1A1A2E10 0%, #16213E10 100%);
+        border-left: 4px solid #C9A962;
+        border-radius: 8px;
+    }
+    
+    .decorators-section h4 {
+        color: #1A1A2E;
+        margin-bottom: 0.5rem;
+        font-size: 1.1rem;
+    }
+    
+    .decorators-hint {
+        color: #666;
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .decorators-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .decorator-item {
+        padding: 1rem;
+        background: white;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .decorator-item:hover {
+        border-color: #C9A962;
+        box-shadow: 0 2px 8px rgba(201, 169, 98, 0.2);
+    }
+    
+    .decorator-item input[type="checkbox"] {
+        margin-right: 0.5rem;
+        accent-color: #C9A962;
+    }
+    
+    .decorator-item label {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        font-weight: 500;
+        color: #1A1A2E;
+    }
+    
+    .decorator-name {
+        flex: 1;
+    }
+    
+    .decorator-price {
+        background: #27ae60;
+        color: white;
+        padding: 0.2rem 0.6rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: bold;
+    }
+    
+    .decorator-item small {
+        display: block;
+        margin-top: 0.5rem;
+        color: #666;
+        font-size: 0.8rem;
+        line-height: 1.4;
+    }
+    
+    .decorators-note {
+        font-size: 0.85rem;
+        color: #666;
+        padding: 0.8rem;
+        background: #f8f9fa;
+        border-radius: 4px;
+        border-left: 3px solid #C9A962;
+    }
+
     .pagamento-section {
         margin-top: 2rem;
         margin-bottom: 1.5rem;
@@ -84,6 +338,21 @@
     .pagamento-section h4 {
         color: #1A1A2E;
         margin-bottom: 0.4rem;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+
+    .pattern-badge {
+        background: #1A1A2E;
+        color: #E8D5A3;
+        font-family: 'Montserrat', sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 0.2rem 0.55rem;
+        border-radius: 999px;
+        font-weight: 700;
     }
 
     .pagamento-hint {
@@ -118,8 +387,7 @@
         border: 2px solid #e0e0e0;
         border-radius: 8px;
         transition: all 0.2s ease;
-        min-height: 60px;
-        justify-content: center;
+        min-height: 110px;
     }
 
     .pagamento-option input:checked + .pagamento-card {
@@ -128,53 +396,79 @@
         background: #FFFBF2;
     }
 
-    .valor-calculado {
-        padding: 1rem;
-        background: #f8f9fa;
-        border: 2px solid #e0e0e0;
-        border-radius: 8px;
+    .pagamento-icon {
+        font-size: 1.4rem;
     }
 
-    .valor-calculado span {
-        font-size: 1.5rem;
-        font-weight: bold;
-        color: #1A1A2E;
-        display: block;
-    }
-
-    .valor-calculado small {
+    .pagamento-card small {
         color: #666;
-        font-size: 0.85rem;
+        font-size: 0.78rem;
+    }
+
+    .cartao-campos {
+        margin-top: 0.5rem;
+    }
+
+    .pagamento-nota {
+        font-size: 0.8rem;
+        color: #666;
+        margin-top: -0.5rem;
+    }
+
+    @@media (max-width: 700px) {
+        .pagamento-grid {
+            grid-template-columns: 1fr;
+        }
     }
 </style>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const dataEntrada = document.querySelector('input[name="dataEntrada"]');
-        const dataSaida = document.querySelector('input[name="dataSaida"]');
+        const tipoPacote = document.getElementById('tipoPacote');
         const tipoQuarto = document.getElementById('tipoQuarto');
-        const valorTotal = document.getElementById('valorTotal');
-        const detalhesCalculo = document.getElementById('detalhesCalculo');
-
-        function calcularValor() {
-            const entrada = new Date(dataEntrada.value);
-            const saida = new Date(dataSaida.value);
-            const selectedOption = tipoQuarto.options[tipoQuarto.selectedIndex];
-            const precoDiario = parseFloat(selectedOption?.dataset.preco) || 0;
-
-            if (entrada && saida && saida > entrada && precoDiario > 0) {
-                const dias = Math.ceil((saida - entrada) / (1000 * 60 * 60 * 24));
-                const total = precoDiario * dias;
-                valorTotal.textContent = `R$ ${total.toFixed(2)}`;
-                detalhesCalculo.textContent = `${dias} diária(s) × R$ ${precoDiario.toFixed(2)}/dia`;
+        const grupoQuarto = document.getElementById('grupoQuarto');
+        const quartoHint = document.getElementById('quartoHint');
+        const quartoInfo = document.getElementById('quartoInfo');
+        
+        function atualizarEstadoQuarto() {
+            const pacoteSelecionado = tipoPacote.value !== '';
+            
+            if (pacoteSelecionado) {
+                // Pacote selecionado - desabilitar quarto
+                tipoQuarto.disabled = true;
+                tipoQuarto.value = ''; // Limpar seleção
+                grupoQuarto.classList.add('disabled');
+                quartoHint.textContent = '(incluído no pacote)';
+                quartoHint.style.color = '#27ae60';
+                quartoInfo.textContent = 'O quarto será atribuído automaticamente pelo sistema de acordo com o pacote escolhido.';
             } else {
-                valorTotal.textContent = 'R$ 0,00';
-                detalhesCalculo.textContent = 'Selecione as datas e o tipo de quarto';
+                // Sem pacote - habilitar quarto
+                tipoQuarto.disabled = false;
+                tipoQuarto.required = true;
+                grupoQuarto.classList.remove('disabled');
+                quartoHint.textContent = '(obrigatório sem pacote)';
+                quartoHint.style.color = '#e74c3c';
+                quartoInfo.textContent = 'Selecione o tipo de quarto desejado.';
             }
         }
+        
+        // Inicializar estado
+        atualizarEstadoQuarto();
+        
+        // Ouvir mudanças no pacote
+        tipoPacote.addEventListener('change', atualizarEstadoQuarto);
 
-        dataEntrada.addEventListener('change', calcularValor);
-        dataSaida.addEventListener('change', calcularValor);
-        tipoQuarto.addEventListener('change', calcularValor);
+        const camposCartao = document.getElementById('camposCartao');
+        const radiosPagamento = document.querySelectorAll('input[name="metodoPagamento"]');
+
+        function atualizarCamposCartao() {
+            const selecionado = document.querySelector('input[name="metodoPagamento"]:checked');
+            camposCartao.hidden = !selecionado || selecionado.value !== 'cartao';
+        }
+
+        radiosPagamento.forEach(function (radio) {
+            radio.addEventListener('change', atualizarCamposCartao);
+        });
+        atualizarCamposCartao();
     });
 </script>

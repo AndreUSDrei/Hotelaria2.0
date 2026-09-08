@@ -1,0 +1,720 @@
+# Diagramas de Classe - Sistema Hotelaria Luxury
+# Use estes códigos em: https://mermaid.live/ ou GitHub/GitLab Markdown
+
+## ============================================
+## 1. DIAGRAMA BUILDER PATTERN - Completo
+## ============================================
+
+```mermaid
+classDiagram
+    direction TB
+    
+    class IPacoteHospedagemBuilder {
+        <<interface>>
+        +DefinirNome(string nome)*
+        +DefinirDescricao(string descricao)*
+        +SelecionarQuarto(IQuarto quarto)*
+        +AdicionarCafeDaManha()*
+        +AdicionarAlmoco()*
+        +AdicionarJantar()*
+        +AdicionarServico(string nome, string descricao, decimal preco)*
+        +AplicarDesconto(decimal percentual)*
+        +Build() PacoteHospedagem
+        +Reset()*
+    }
+    
+    class PacoteRomanticoBuilder {
+        -PacoteHospedagem _pacote
+        +DefinirNome(string nome)
+        +DefinirDescricao(string descricao)
+        +SelecionarQuarto(IQuarto quarto)
+        +AdicionarCafeDaManha()
+        +AdicionarAlmoco()
+        +AdicionarJantar()
+        +AdicionarServico(string, string, decimal)
+        +AplicarDesconto(decimal percentual)
+        +Build() PacoteHospedagem
+        +Reset()
+    }
+    
+    class PacoteNegociosBuilder {
+        -PacoteHospedagem _pacote
+        +DefinirNome(string nome)
+        +DefinirDescricao(string descricao)
+        +SelecionarQuarto(IQuarto quarto)
+        +AdicionarCafeDaManha()
+        +AdicionarAlmoco()
+        +AdicionarJantar()
+        +AdicionarServico(string, string, decimal)
+        +AplicarDesconto(decimal percentual)
+        +Build() PacoteHospedagem
+        +Reset()
+    }
+    
+    class PacoteHospedagem {
+        +string Nome
+        +string Descricao
+        +IQuarto Quarto
+        +List~Refeicao~ Refeicoes
+        +List~ServicoAdicional~ Servicos
+        +decimal DescontoPercentual
+        +CalcularValorTotal(int dias) decimal
+        +ExibirDetalhes()
+    }
+    
+    class HotelDirector {
+        -IPacoteHospedagemBuilder _builder
+        +HotelDirector(IPacoteHospedagemBuilder builder)
+        +ConstruirPacoteRomanticoCompleto(IQuarto quarto)
+        +ConstruirPacoteNegociosCompleto(IQuarto quarto)
+        +ConstruirPacoteBasico(IQuarto quarto)
+        +ConstruirPacoteFimDeSemana(IQuarto quarto)
+        +ObterPacote() PacoteHospedagem
+    }
+    
+    class Refeicao {
+        +string Nome
+        +string Descricao
+        +string Horario
+        +decimal Preco
+        +Exibir()
+    }
+    
+    class ServicoAdicional {
+        +string Nome
+        +string Descricao
+        +decimal Preco
+        +Exibir()
+    }
+    
+    IPacoteHospedagemBuilder <|.. PacoteRomanticoBuilder
+    IPacoteHospedagemBuilder <|.. PacoteNegociosBuilder
+    PacoteRomanticoBuilder ..> PacoteHospedagem : creates
+    PacoteNegociosBuilder ..> PacoteHospedagem : creates
+    HotelDirector --> IPacoteHospedagemBuilder : uses
+    PacoteHospedagem --> Refeicao : contains
+    PacoteHospedagem --> ServicoAdicional : contains
+```
+
+## ============================================
+## 2. DIAGRAMA PROTOTYPE PATTERN - Completo
+## ============================================
+
+```mermaid
+classDiagram
+    direction TB
+    
+    class IQuarto {
+        <<interface>>
+        +string Tipo*
+        +string Descricao*
+        +decimal PrecoBaseDiaria*
+        +int Capacidade*
+        +List~string~ Comodidades*
+        +Clone() IQuarto*
+        +ExibirDetalhes()*
+    }
+    
+    class QuartoStandard {
+        +string Tipo = "Standard"
+        +string Descricao
+        +decimal PrecoBaseDiaria = 250
+        +int Capacidade = 2
+        +List~string~ Comodidades
+        +Clone() IQuarto
+        +QuartoStandard()
+    }
+    
+    class QuartoLuxo {
+        +string Tipo = "Luxo"
+        +string Descricao
+        +decimal PrecoBaseDiaria = 550
+        +int Capacidade = 3
+        +List~string~ Comodidades
+        +Clone() IQuarto
+        +QuartoLuxo()
+    }
+    
+    class Suite {
+        +string Tipo = "Suite"
+        +string Descricao
+        +decimal PrecoBaseDiaria = 1050
+        +int Capacidade = 4
+        +List~string~ Comodidades
+        +Clone() IQuarto
+        +Suite()
+    }
+    
+    class HotelService {
+        -List~IQuarto~ _prototipos
+        +HotelService()
+        +ObterPrototiposQuartos() List~IQuarto~
+        +ObterPrototipoPorTipo(string tipo) IQuarto
+        +CriarBuilder(string tipoPacote) IPacoteHospedagemBuilder
+    }
+    
+    IQuarto <|.. QuartoStandard
+    IQuarto <|.. QuartoLuxo
+    IQuarto <|.. Suite
+    HotelService --> IQuarto : manages prototypes
+```
+
+## ============================================
+## 3. DIAGRAMA ARQUITETURA ATUAL (completo e validado no Mermaid)
+## ============================================
+## Facade + Adapter + Proxy + Builder + Prototype
+## Cole em https://mermaid.live/ — evite "..." e classes sem metodos no corpo.
+
+```mermaid
+classDiagram
+    direction TB
+
+    class HomeController {
+        -IReservaFacade reservaFacade
+        +Index() IActionResult
+        +Pacotes() IActionResult
+        +VerificarDisponibilidade() IActionResult
+    }
+
+    class ReservasController {
+        -IReservaFacade reservaFacade
+        +Index() IActionResult
+        +Criar() IActionResult
+        +Detalhes(string id) IActionResult
+        +CheckIn(string id) IActionResult
+        +CheckOut(string id) IActionResult
+    }
+
+    class IReservaFacade {
+        <<interface>>
+        +CriarReservaComPacote() Reserva
+        +ObterPrototiposQuartos() List
+        +ObterDisponibilidadeCompleta() Dictionary
+        +ObterTodasReservas() List
+        +ObterReservaPorId(string id) Reserva
+        +RealizarCheckIn(string id) bool
+        +RealizarCheckOut(string id) bool
+        +ContarReservasAtivas() int
+    }
+
+    class ReservaFacade {
+        -IGerenciadorReservas gerenciador
+        -HotelService hotelService
+        +CriarReservaComPacote() Reserva
+        +ObterPrototiposQuartos() List
+    }
+
+    class HotelService {
+        -List prototipos
+        +ObterPrototipoPorTipo(string tipo) IQuarto
+        +CriarBuilder(string tipoPacote) IPacoteHospedagemBuilder
+        +ObterPrototiposQuartos() List
+    }
+
+    class HotelDirector {
+        -IPacoteHospedagemBuilder builder
+        +ConstruirPacoteRomanticoCompleto(IQuarto quarto)
+        +ConstruirPacoteNegociosCompleto(IQuarto quarto)
+        +ConstruirPacoteBasico(IQuarto quarto)
+        +ConstruirPacoteFimDeSemana(IQuarto quarto)
+        +ObterPacote() PacoteHospedagem
+    }
+
+    class IPacoteHospedagemBuilder {
+        <<interface>>
+        +DefinirNome(string nome)
+        +SelecionarQuarto(IQuarto quarto)
+        +Build() PacoteHospedagem
+        +Reset()
+    }
+
+    class PacoteRomanticoBuilder {
+        -PacoteHospedagem pacote
+        +Build() PacoteHospedagem
+    }
+
+    class PacoteNegociosBuilder {
+        -PacoteHospedagem pacote
+        +Build() PacoteHospedagem
+    }
+
+    class IQuarto {
+        <<interface>>
+        +string Tipo
+        +decimal PrecoBaseDiaria
+        +Clone() IQuarto
+    }
+
+    class QuartoStandard {
+        +Clone() IQuarto
+    }
+
+    class QuartoLuxo {
+        +Clone() IQuarto
+    }
+
+    class Suite {
+        +Clone() IQuarto
+    }
+
+    class IGerenciadorReservas {
+        <<interface>>
+        +CriarReservaWeb() Reserva
+        +QuartoDisponivel() bool
+        +ObterDisponibilidadeCompleta() Dictionary
+        +RealizarCheckIn(string id) bool
+        +RealizarCheckOut(string id) bool
+        +ObterTodasReservas() List
+    }
+
+    class CachingDisponibilidadeProxy {
+        -IGerenciadorReservas real
+        +QuartoDisponivel() bool
+        +ObterDisponibilidadeCompleta() Dictionary
+        +CriarReservaWeb() Reserva
+    }
+
+    class GerenciadorReservasProxy {
+        -GerenciadorReservas real
+        -ILogger logger
+        +CriarReservaWeb() Reserva
+        +RealizarCheckIn(string id) bool
+        +RealizarCheckOut(string id) bool
+    }
+
+    class GerenciadorReservas {
+        -IReservaRepository repositorio
+        -INotificacaoReserva notificacao
+        -IInventarioQuartos inventario
+        -ReservaNotificacaoAdapter reservaNotificacao
+        +CriarReservaWeb() Reserva
+        +QuartoDisponivel() bool
+        +RealizarCheckIn(string id) bool
+        +RealizarCheckOut(string id) bool
+    }
+
+    class IReservaRepository {
+        <<interface>>
+        +ObterTodas
+        +ObterPorId
+        +Adicionar
+        +ContarConflitos
+    }
+
+    class InMemoryReservaRepository {
+        -List reservas
+        +ObterTodas
+        +ObterPorId
+        +Adicionar
+        +ContarConflitos
+    }
+
+    class IInventarioQuartos {
+        <<interface>>
+        +ObterCapacidadePorTipo
+    }
+
+    class InMemoryInventarioQuartosAdapter {
+        -Dictionary inventario
+        +ObterCapacidadePorTipo
+    }
+
+    class INotificacaoReserva {
+        <<interface>>
+        +Informar
+        +InformarErro
+        +InformarSucesso
+    }
+
+    class ConsoleNotificacaoAdapter {
+        +Informar
+        +InformarErro
+        +InformarSucesso
+    }
+
+    class WebNotificacaoAdapter {
+        +Informar
+        +InformarErro
+        +InformarSucesso
+    }
+
+    class CompositeNotificacaoAdapter {
+        -adapters
+        +CompositeNotificacaoAdapter
+        +Informar
+        +InformarErro
+        +InformarSucesso
+    }
+
+    class ReservaNotificacaoAdapter {
+        +ExibirDetalhes
+    }
+
+    class Reserva {
+        +string Id
+        +string HospedeNome
+        +string TipoQuarto
+        +DateTime DataEntrada
+        +DateTime DataSaida
+        +PacoteHospedagem Pacote
+        +decimal ValorTotal
+        +bool CheckInRealizado
+        +bool CheckOutRealizado
+    }
+
+    class PacoteHospedagem {
+        +string Nome
+        +string Descricao
+        +IQuarto Quarto
+        +List Refeicoes
+        +List Servicos
+        +decimal DescontoPercentual
+        +CalcularValorTotal
+        +ExibirDetalhes
+    }
+
+    HomeController --> IReservaFacade
+    ReservasController --> IReservaFacade
+    IReservaFacade <|.. ReservaFacade
+    ReservaFacade --> IGerenciadorReservas
+    ReservaFacade --> HotelService
+    ReservaFacade ..> HotelDirector
+    ReservaFacade ..> IPacoteHospedagemBuilder
+
+    IGerenciadorReservas <|.. CachingDisponibilidadeProxy
+    IGerenciadorReservas <|.. GerenciadorReservasProxy
+    IGerenciadorReservas <|.. GerenciadorReservas
+    CachingDisponibilidadeProxy --> GerenciadorReservasProxy
+    GerenciadorReservasProxy --> GerenciadorReservas
+
+    GerenciadorReservas --> IReservaRepository
+    GerenciadorReservas --> IInventarioQuartos
+    GerenciadorReservas --> INotificacaoReserva
+    GerenciadorReservas --> ReservaNotificacaoAdapter
+
+    IReservaRepository <|.. InMemoryReservaRepository
+    IInventarioQuartos <|.. InMemoryInventarioQuartosAdapter
+    INotificacaoReserva <|.. ConsoleNotificacaoAdapter
+    INotificacaoReserva <|.. WebNotificacaoAdapter
+    INotificacaoReserva <|.. CompositeNotificacaoAdapter
+    CompositeNotificacaoAdapter o-- ConsoleNotificacaoAdapter
+    CompositeNotificacaoAdapter o-- WebNotificacaoAdapter
+
+    IReservaRepository ..> Reserva
+    GerenciadorReservas --> Reserva
+    Reserva --> PacoteHospedagem
+
+    HotelService --> IQuarto
+    IQuarto <|.. QuartoStandard
+    IQuarto <|.. QuartoLuxo
+    IQuarto <|.. Suite
+    HotelDirector --> IPacoteHospedagemBuilder
+    IPacoteHospedagemBuilder <|.. PacoteRomanticoBuilder
+    IPacoteHospedagemBuilder <|.. PacoteNegociosBuilder
+    PacoteRomanticoBuilder ..> PacoteHospedagem
+    PacoteNegociosBuilder ..> PacoteHospedagem
+    PacoteHospedagem --> IQuarto
+```
+
+## ============================================
+## 3c. ADAPTERS E MODELS — use este se as caixas de baixo do diagrama 3 sairem vazias
+## ============================================
+## Diagrama menor: o Mermaid Live as vezes omite metodos em diagramas muito grandes.
+
+```mermaid
+classDiagram
+    direction TB
+
+    class GerenciadorReservas {
+        -IReservaRepository repositorio
+        -INotificacaoReserva notificacao
+        -IInventarioQuartos inventario
+        -ReservaNotificacaoAdapter reservaNotificacao
+    }
+
+    class IReservaRepository {
+        <<interface>>
+        +ObterTodas
+        +ObterPorId
+        +Adicionar
+        +ContarConflitos
+    }
+
+    class InMemoryReservaRepository {
+        -List reservas
+        +ObterTodas
+        +ObterPorId
+        +Adicionar
+        +ContarConflitos
+    }
+
+    class IInventarioQuartos {
+        <<interface>>
+        +ObterCapacidadePorTipo
+    }
+
+    class InMemoryInventarioQuartosAdapter {
+        -Dictionary inventario
+        +ObterCapacidadePorTipo
+    }
+
+    class INotificacaoReserva {
+        <<interface>>
+        +Informar
+        +InformarErro
+        +InformarSucesso
+    }
+
+    class CompositeNotificacaoAdapter {
+        -adapters
+        +Informar
+        +InformarErro
+        +InformarSucesso
+    }
+
+    class ConsoleNotificacaoAdapter {
+        +Informar
+        +InformarErro
+        +InformarSucesso
+    }
+
+    class WebNotificacaoAdapter {
+        +Informar
+        +InformarErro
+        +InformarSucesso
+    }
+
+    class ReservaNotificacaoAdapter {
+        +ExibirDetalhes
+    }
+
+    class Reserva {
+        +string Id
+        +string HospedeNome
+        +string TipoQuarto
+        +DateTime DataEntrada
+        +DateTime DataSaida
+        +PacoteHospedagem Pacote
+        +decimal ValorTotal
+        +bool CheckInRealizado
+        +bool CheckOutRealizado
+    }
+
+    class PacoteHospedagem {
+        +string Nome
+        +string Descricao
+        +IQuarto Quarto
+        +List Refeicoes
+        +List Servicos
+        +decimal DescontoPercentual
+        +CalcularValorTotal
+    }
+
+    GerenciadorReservas --> IReservaRepository
+    GerenciadorReservas --> IInventarioQuartos
+    GerenciadorReservas --> INotificacaoReserva
+    GerenciadorReservas --> ReservaNotificacaoAdapter
+
+    IReservaRepository <|.. InMemoryReservaRepository
+    IInventarioQuartos <|.. InMemoryInventarioQuartosAdapter
+    INotificacaoReserva <|.. CompositeNotificacaoAdapter
+    INotificacaoReserva <|.. ConsoleNotificacaoAdapter
+    INotificacaoReserva <|.. WebNotificacaoAdapter
+
+    CompositeNotificacaoAdapter o-- ConsoleNotificacaoAdapter
+    CompositeNotificacaoAdapter o-- WebNotificacaoAdapter
+
+    InMemoryReservaRepository ..> Reserva
+    GerenciadorReservas --> Reserva
+    Reserva --> PacoteHospedagem
+```
+
+## ============================================
+## 3b. DIAGRAMA RESUMIDO (visao por camadas)
+## ============================================
+
+```mermaid
+flowchart TB
+    subgraph apresentacao [Controllers MVC]
+        HC[HomeController]
+        RC[ReservasController]
+    end
+
+    subgraph facade [1 - Facade]
+        IRF[IReservaFacade]
+        RF[ReservaFacade]
+        IRF -.-> RF
+    end
+
+    subgraph proxy [3 - Proxy]
+        CP[CachingDisponibilidadeProxy]
+        VP[GerenciadorReservasProxy]
+        GR[GerenciadorReservas]
+        CP --> VP --> GR
+    end
+
+    subgraph adapter [2 - Adapter]
+        REP[InMemoryReservaRepository]
+        INV[InMemoryInventarioQuartosAdapter]
+        NOT[CompositeNotificacaoAdapter]
+    end
+
+    subgraph padroes [Builder e Prototype]
+        HS[HotelService]
+        HD[HotelDirector]
+    end
+
+    subgraph modelos [Models]
+        RES[Reserva]
+        PAC[PacoteHospedagem]
+    end
+
+    HC --> IRF
+    RC --> IRF
+    RF --> CP
+    RF --> HS
+    RF --> HD
+    GR --> REP
+    GR --> INV
+    GR --> NOT
+    HS --> PAC
+    HD --> PAC
+    GR --> RES
+    RES --> PAC
+```
+
+## ============================================
+## 4. DIAGRAMA DE SEQUÊNCIA - Criar Reserva (com Facade + Proxies)
+## ============================================
+
+```mermaid
+sequenceDiagram
+    actor Cliente
+    participant RC as ReservasController
+    participant F as ReservaFacade
+    participant CP as CachingDisponibilidadeProxy
+    participant VP as GerenciadorReservasProxy
+    participant G as GerenciadorReservas
+    participant HS as HotelService
+    participant HD as HotelDirector
+    participant PB as IPacoteHospedagemBuilder
+    participant Repo as IReservaRepository
+
+    Cliente->>RC: POST /Criar
+
+    RC->>F: CriarReservaComPacote(...)
+
+    Note over F: Facade: default quarto, prototótipo, builder, director, switch pacote
+
+    F->>HS: ObterPrototipoPorTipo(...)
+    HS-->>F: IQuarto
+    F->>HS: CriarBuilder(tipoPacote)
+    HS-->>F: IPacoteHospedagemBuilder
+    F->>HD: ConstruirPacoteXxx(quarto)
+    HD->>PB: passos de construção
+    PB-->>HD: Build via ObterPacote
+    HD-->>F: PacoteHospedagem
+
+    F->>CP: CriarReservaWeb(..., pacote)
+
+    CP->>VP: delega (invalida cache se necessário)
+    VP->>VP: valida datas + log
+    VP->>G: delega
+
+    G->>G: QuartoDisponivel (usa Repo + Inventário)
+    G->>Repo: Adicionar(Reserva)
+    Repo-->>G: ok
+    G-->>VP: Reserva
+    VP-->>CP: Reserva
+    CP-->>F: Reserva
+    F-->>RC: Reserva
+    RC-->>Cliente: Redirect Detalhes
+```
+
+## ============================================
+## 5. DIAGRAMA DE ESTADOS - Reserva
+## ============================================
+
+```mermaid
+stateDiagram-v2
+    [*] --> Reservada: Criar reserva
+    
+    Reservada --> CheckInRealizado: Check-in
+    Reservada --> Cancelada: Cancelar
+    
+    CheckInRealizado --> CheckOutRealizado: Check-out
+    CheckInRealizado --> Cancelada: Cancelar (com taxa)
+    
+    CheckOutRealizado --> [*]: Concluída
+    Cancelada --> [*]: Encerrada
+```
+
+## ============================================
+## 6. DIAGRAMA COMPONENTES - Sistema
+## ============================================
+
+```mermaid
+graph TB
+    subgraph "Apresentação"
+        V[Views Razor]
+        C[Controllers]
+    end
+
+    subgraph "Coordenação"
+        FAC[IReservaFacade / ReservaFacade]
+    end
+
+    subgraph "Proxy IGerenciadorReservas"
+        PX1[CachingDisponibilidadeProxy]
+        PX2[GerenciadorReservasProxy]
+        GR[GerenciadorReservas]
+    end
+
+    subgraph "Adapters"
+        REP[IReservaRepository]
+        INV[IInventarioQuartos]
+        NOT[INotificacaoReserva Composite]
+    end
+
+    subgraph "Negócio + Padrões existentes"
+        HS[HotelService / Prototype]
+        BD[Builder + HotelDirector]
+        M[Models]
+    end
+
+    subgraph "Persistência em memória"
+        MEM[(List Reserva + inventário fixo)]
+    end
+
+    V --> C
+    C --> FAC
+    FAC --> PX1
+    PX1 --> PX2
+    PX2 --> GR
+    FAC --> HS
+    FAC --> BD
+    GR --> REP
+    GR --> INV
+    GR --> NOT
+    REP --> MEM
+    INV --> MEM
+    BD --> M
+    HS --> M
+    GR --> M
+```
+
+## ============================================
+## INSTRUÇÕES DE USO
+## ============================================
+
+1. Copie o código entre os delimitadores ```mermaid
+2. Cole em: https://mermaid.live/ para visualizar
+3. Ou use diretamente no GitHub/GitLab (suportam Mermaid nativamente)
+4. Para exportar imagem: No Mermaid Live Editor, clique em "Actions" → "PNG/SVG"
+
+## Dicas:
+- TB = Top to Bottom (vertical)
+- LR = Left to Right (horizontal)
+- <--|> = Herança/Implementação
+- --> = Associação/Dependência
+- ..> = Uso/Dependência fraca

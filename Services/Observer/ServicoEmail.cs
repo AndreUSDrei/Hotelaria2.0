@@ -1,12 +1,19 @@
+using SistemaHotelaria.Models;
+
 namespace SistemaHotelaria.Services.Observer;
 
-/// <summary>
-/// Observer Pattern: Concrete observer - Email service.
-/// </summary>
 public class ServicoEmail : IObserver
 {
-    public void Atualizar(string mensagem)
+    public void Atualizar(Reserva reserva)
     {
-        Console.WriteLine($"📧 [E-mail] {mensagem}");
+        var descricao = reserva.Status switch
+        {
+            "Check-in" => $"Confirmação de check-in enviada para {reserva.HospedeNome}.",
+            "Check-out" => $"Comprovante de estadia e agradecimento enviados para {reserva.HospedeNome}.",
+            _ => $"Confirmação da reserva #{reserva.Id} enviada para {reserva.HospedeNome}."
+        };
+
+        Console.WriteLine($"📧 [E-mail] {descricao}");
+        reserva.RegistrarAcao("E-mail", "📧", descricao);
     }
 }

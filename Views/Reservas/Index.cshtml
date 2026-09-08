@@ -4,13 +4,12 @@
 }
 
 <h1>📋 Reservas</h1>
-<p>Lista de reservas demonstrando os padrões Observer, Strategy e Composite.</p>
 
 <a href="~/Reservas/Criar" class="btn btn-primary mb-3">+ Nova Reserva</a>
 
 @if (!Model.Any())
 {
-    <div class="alert alert-info">Nenhuma reserva encontrada. Crie uma para ver os padrões em ação!</div>
+    <div class="alert alert-info">Nenhuma reserva encontrada.</div>
 }
 else
 {
@@ -41,7 +40,7 @@ else
                     <td>@r.MetodoPagamento</td>
                     <td>@r.Status</td>
                     <td>
-                        <a href="~/Reservas/Detalhes/@r.Id" class="btn btn-sm btn-primary">Ver</a>
+                        <a href="~/Reservas/Detalhes/@r.Id" class="btn btn-sm">Ver</a>
                     </td>
                 </tr>
             }
