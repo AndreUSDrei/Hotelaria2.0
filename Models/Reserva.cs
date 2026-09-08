@@ -1,14 +1,14 @@
-using SistemaHotelaria.Builder;
 using SistemaHotelaria.Services.Observer;
 using SistemaHotelaria.Services.Strategy;
-using SistemaHotelaria.Models.States;
 
 namespace SistemaHotelaria.Models;
 
+/// <summary>
+/// Simplified Reservation model demonstrating Observer and Strategy patterns.
+/// </summary>
 public class Reserva : ISubject
 {
     private readonly List<IObserver> _observadores = new();
-    private readonly List<AcaoServico> _acoesPendentes = new();
     private IEstrategiaPagamento? _estrategiaPagamento;
 
     public string Id { get; set; } = Guid.NewGuid().ToString("N")[..8].ToUpper();
@@ -16,17 +16,12 @@ public class Reserva : ISubject
     public string TipoQuarto { get; set; } = string.Empty;
     public DateTime DataEntrada { get; set; }
     public DateTime DataSaida { get; set; }
-    public PacoteHospedagem? Pacote { get; set; }
     public decimal ValorTotal { get; set; }
-    
-    public IEstadoReserva EstadoAtual { get; set; } = new EstadoConfirmada();
-    public string Status => EstadoAtual.Nome;
+    public string Status { get; set; } = "Confirmada";
+    public string MetodoPagamento { get; set; } = string.Empty;
+    public string TransacaoId { get; set; } = string.Empty;
 
-    public string MetodoPagamento { get; set; } = "Pix";
-    public string PagamentoTransacaoId { get; set; } = string.Empty;
-    public string PagamentoComprovante { get; set; } = string.Empty;
-    public List<EventoReserva> Eventos { get; set; } = new();
-
+    // Observer Pattern: Subject implementation
     public void Anexar(IObserver observador)
     {
         if (!_observadores.Contains(observador))
@@ -35,54 +30,13 @@ public class Reserva : ISubject
 
     public void Desanexar(IObserver observador) => _observadores.Remove(observador);
 
-    public void Notificar()
+    public void Notificar(string mensagem)
     {
         foreach (var observador in _observadores)
-            observador.Atualizar(this);
+            observador.Atualizar(mensagem);
     }
 
-    // Delegações para o State
-    public void CheckIn() => EstadoAtual.CheckIn(this);
-    public void CheckOut() => EstadoAtual.CheckOut(this);
-    public void Cancelar() => EstadoAtual.Cancelar(this);
-
-    // Chamado pelas classes de Estado
-    public void AtualizarEstado(IEstadoReserva novoEstado)
-    {
-        EstadoAtual = novoEstado;
-
-        _acoesPendentes.Clear();
-        Notificar(); // Integração perfeita com o Observer
-
-        Eventos.Add(new EventoReserva
-        {
-            Status = novoEstado.Nome,
-            Quando = DateTime.Now,
-            Acoes = _acoesPendentes.Select(a => new AcaoServico
-            {
-                Servico = a.Servico,
-                Icone = a.Icone,
-                Descricao = a.Descricao
-            }).ToList()
-        });
-    }
-
-    // Usado para forçar o estado ao carregar do EF Core
-    public void DefinirEstadoInicial(IEstadoReserva estado)
-    {
-        EstadoAtual = estado;
-    }
-
-    public void RegistrarAcao(string servico, string icone, string descricao)
-    {
-        _acoesPendentes.Add(new AcaoServico
-        {
-            Servico = servico,
-            Icone = icone,
-            Descricao = descricao
-        });
-    }
-
+    // Strategy Pattern: Payment strategy
     public void DefinirEstrategiaPagamento(IEstrategiaPagamento estrategia) =>
         _estrategiaPagamento = estrategia;
 
@@ -92,23 +46,37 @@ public class Reserva : ISubject
             return null;
 
         var resultado = _estrategiaPagamento.Pagar(valor);
-        if (!resultado.Sucesso)
-            return resultado;
-
-        MetodoPagamento = resultado.Metodo;
-        PagamentoTransacaoId = resultado.TransacaoId;
-        PagamentoComprovante = resultado.ComprovanteTexto;
+        if (resultado.Sucesso)
+        {
+            MetodoPagamento = resultado.Metodo;
+            TransacaoId = resultado.TransacaoId;
+            Status = "Paga";
+            Notificar($"Reserva #{Id} de {HospedeNome} foi paga via {resultado.Metodo}");
+        }
         return resultado;
+    }
+
+    public void CheckIn()
+    {
+        Status = "Check-in";
+        Notificar($"{HospedeNome} fez check-in no quarto {TipoQuarto}");
+    }
+
+    public void CheckOut()
+    {
+        Status = "Check-out";
+        Notificar($"{HospedeNome} fez check-out do quarto {TipoQuarto}");
     }
 
     public void ExibirDetalhes()
     {
         Console.WriteLine($"📋 Reserva #{Id}");
         Console.WriteLine($"   Hóspede: {HospedeNome}");
+        Console.WriteLine($"   Quarto: {TipoQuarto}");
         Console.WriteLine($"   Período: {DataEntrada:dd/MM/yyyy} a {DataSaida:dd/MM/yyyy}");
         Console.WriteLine($"   Status: {Status}");
         Console.WriteLine($"   Valor Total: R$ {ValorTotal:N2}");
-        Console.WriteLine($"   Pagamento: {MetodoPagamento} ({PagamentoTransacaoId})");
-        Pacote?.ExibirDetalhes();
+        if (!string.IsNullOrEmpty(MetodoPagamento))
+            Console.WriteLine($"   Pagamento: {MetodoPagamento} ({TransacaoId})");
     }
 }

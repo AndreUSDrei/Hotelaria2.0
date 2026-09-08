@@ -1,19 +1,12 @@
-using SistemaHotelaria.Models;
-
 namespace SistemaHotelaria.Services.Observer;
 
+/// <summary>
+/// Observer Pattern: Concrete observer - Cleaning service.
+/// </summary>
 public class ServicoLimpeza : IObserver
 {
-    public void Atualizar(Reserva reserva)
+    public void Atualizar(string mensagem)
     {
-        var descricao = reserva.Status switch
-        {
-            "Check-in" => $"Quarto {reserva.TipoQuarto} ocupado — arrumação diária programada.",
-            "Check-out" => $"Quarto {reserva.TipoQuarto} liberado — faxina completa agendada.",
-            _ => $"Quarto {reserva.TipoQuarto} reservado — preparação antes da chegada."
-        };
-
-        Console.WriteLine($"🧹 [Limpeza] {descricao}");
-        reserva.RegistrarAcao("Limpeza", "🧹", descricao);
+        Console.WriteLine($"🧹 [Limpeza] {mensagem}");
     }
 }

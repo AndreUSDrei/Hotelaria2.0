@@ -1,100 +1,93 @@
 using Microsoft.AspNetCore.Mvc;
-using SistemaHotelaria.Services.Facade;
+using SistemaHotelaria.Models;
+using SistemaHotelaria.Services.Notifications;
+using SistemaHotelaria.Services.Observer;
+using SistemaHotelaria.Services.Strategy;
 
 namespace SistemaHotelaria.Controllers;
 
+/// <summary>
+/// Simplified Reservations Controller demonstrating Observer, Strategy, and Composite patterns.
+/// </summary>
 public class ReservasController : Controller
 {
-    private readonly IReservaFacade _reservaFacade;
+    private static readonly List<Reserva> _reservas = new();
+    private static readonly List<IObserver> _observadores = new();
+    private static readonly INotificacaoReserva _notificacaoComposite = new CompositeNotificacaoAdapter();
 
-    public ReservasController(IReservaFacade reservaFacade)
+    static ReservasController()
     {
-        _reservaFacade = reservaFacade;
+        // Initialize observers
+        _observadores.Add(new Recepcao());
+        _observadores.Add(new ServicoEmail());
+        _observadores.Add(new ServicoLimpeza());
+
+        // Initialize composite notifications
+        var composite = (CompositeNotificacaoAdapter)_notificacaoComposite;
+        composite.Adicionar(new ConsoleNotificacaoAdapter());
+        composite.Adicionar(new WebNotificacaoAdapter());
     }
 
     public IActionResult Index()
     {
-        var reservas = _reservaFacade.ObterTodasReservas();
-        return View(reservas);
+        return View(_reservas);
     }
 
     public IActionResult Criar()
     {
-        ViewBag.Quartos = _reservaFacade.ObterPrototiposQuartos();
-        ViewBag.TiposPacote = _reservaFacade.ObterTiposPacote();
+        ViewBag.MetodosPagamento = new[] { "Pix", "Cartão", "Boleto" };
+        ViewBag.TiposQuarto = TipoQuarto.ObterTodosTipos();
         return View();
     }
 
     [HttpPost]
-    public IActionResult Criar(string hospedeNome, string tipoQuarto, string tipoPacote,
-                               DateTime dataEntrada, DateTime dataSaida, string metodoPagamento = "pix",
-                               string? numeroCartao = null, string? cvv = null)
+    public IActionResult Criar(string hospedeNome, string tipoQuarto, DateTime dataEntrada, 
+                               DateTime dataSaida, string metodoPagamento)
     {
-        var reserva = _reservaFacade.CriarReservaComPacote(hospedeNome, tipoQuarto, tipoPacote, dataEntrada, dataSaida,
-            metodoPagamento, numeroCartao, cvv);
-
-        if (reserva == null)
+        // Calcular número de diárias
+        var dias = (dataSaida - dataEntrada).Days;
+        if (dias <= 0)
         {
-            var quartoInformado = !string.IsNullOrEmpty(tipoQuarto) || !string.IsNullOrEmpty(tipoPacote);
-            TempData["Erro"] = quartoInformado
-                ? "Não há quartos disponíveis para este período ou tipo de quarto inválido"
-                : "Tipo de quarto não encontrado";
+            TempData["Erro"] = "A data de saída deve ser posterior à data de entrada.";
             return RedirectToAction(nameof(Criar));
         }
 
-        var pacoteMsg = string.IsNullOrEmpty(tipoPacote) ? "" : $" com pacote {tipoPacote}";
-        TempData["Sucesso"] = $"Reserva #{reserva.Id} confirmada{pacoteMsg}. Pagamento via {reserva.MetodoPagamento} aprovado.";
-        return RedirectToAction(nameof(Detalhes), new { id = reserva.Id });
-    }
+        // Calcular valor total baseado no tipo de quarto e número de diárias
+        var precoDiario = TipoQuarto.ObterPrecoDiario(tipoQuarto);
+        var valorTotal = precoDiario * dias;
 
-    // ============================================================
-    // NOVA ACTION - Criação de Reserva com Decorators
-    // ============================================================
-    // Esta action permite criar uma reserva com serviços extras
-    // adicionados via Padrão Decorator.
-    //
-    // IMPORTANTE - PARÂMETRO decorators:
-    // Recebe uma lista de strings do formulário (checkboxes marcados).
-    // Cada string representa um decorator a ser aplicado.
-    //
-    // Isso demonstra como o padrão Decorator se integra com MVC:
-    // - View: checkboxes para selecionar serviços extras
-    // - Controller: recebe seleção e chama Facade com decorators
-    // - Facade: aplica decorators usando o padrão
-    // - Model: reserva é criada com serviços extras
-    // ============================================================
-    [HttpPost]
-    public IActionResult CriarComDecorators(string hospedeNome, string tipoQuarto, string tipoPacote,
-                                             DateTime dataEntrada, DateTime dataSaida,
-                                             List<string> decorators, string metodoPagamento = "pix",
-                                             string? numeroCartao = null, string? cvv = null)
-    {
-        // Se não houver decorators selecionados, inicializa lista vazia
-        decorators ??= new List<string>();
-
-        var reserva = _reservaFacade.CriarReservaComPacoteEDecorators(
-            hospedeNome, tipoQuarto, tipoPacote, dataEntrada, dataSaida, decorators,
-            metodoPagamento, numeroCartao, cvv);
-
-        if (reserva == null)
+        var reserva = new Reserva
         {
-            var quartoInformado = !string.IsNullOrEmpty(tipoQuarto) || !string.IsNullOrEmpty(tipoPacote);
-            TempData["Erro"] = quartoInformado
-                ? "Não há quartos disponíveis para este período ou tipo de quarto inválido"
-                : "Tipo de quarto não encontrado";
-            return RedirectToAction(nameof(Criar));
-        }
+            HospedeNome = hospedeNome,
+            TipoQuarto = tipoQuarto,
+            DataEntrada = dataEntrada,
+            DataSaida = dataSaida,
+            ValorTotal = valorTotal
+        };
 
-        var pacoteMsg = string.IsNullOrEmpty(tipoPacote) ? "" : $" com pacote {tipoPacote}";
-        var decoratorsMsg = decorators.Any() ? $" + serviços extras: {string.Join(", ", decorators)}" : "";
-        TempData["Sucesso"] = $"Reserva #{reserva.Id} confirmada{pacoteMsg}{decoratorsMsg}. Equipes do hotel foram acionadas.";
+        // Observer Pattern: Attach observers
+        foreach (var obs in _observadores)
+            reserva.Anexar(obs);
+
+        // Strategy Pattern: Set payment strategy
+        var estrategia = EstrategiaPagamentoFactory.Criar(metodoPagamento);
+        reserva.DefinirEstrategiaPagamento(estrategia);
+
+        // Process payment
+        reserva.ProcessarPagamento(valorTotal);
+
+        _reservas.Add(reserva);
         
+        // Composite Pattern: Send notifications
+        _notificacaoComposite.InformarSucesso($"Reserva #{reserva.Id} criada com sucesso!");
+
+        TempData["Sucesso"] = $"Reserva #{reserva.Id} criada com sucesso via {metodoPagamento}";
         return RedirectToAction(nameof(Detalhes), new { id = reserva.Id });
     }
 
     public IActionResult Detalhes(string id)
     {
-        var reserva = _reservaFacade.ObterReservaPorId(id);
+        var reserva = _reservas.FirstOrDefault(r => r.Id == id);
         if (reserva == null)
             return NotFound();
 
@@ -104,24 +97,28 @@ public class ReservasController : Controller
     [HttpPost]
     public IActionResult CheckIn(string id)
     {
-        var sucesso = _reservaFacade.RealizarCheckIn(id);
-        if (sucesso)
-            TempData["Sucesso"] = "Check-in realizado. E-mail, Limpeza e Recepção foram atualizados.";
-        else
-            TempData["Erro"] = "Não foi possível realizar o check-in";
+        var reserva = _reservas.FirstOrDefault(r => r.Id == id);
+        if (reserva == null)
+            return NotFound();
 
+        reserva.CheckIn();
+        _notificacaoComposite.InformarSucesso($"Check-in realizado para reserva #{id}");
+        
+        TempData["Sucesso"] = "Check-in realizado com sucesso";
         return RedirectToAction(nameof(Detalhes), new { id });
     }
 
     [HttpPost]
     public IActionResult CheckOut(string id)
     {
-        var sucesso = _reservaFacade.RealizarCheckOut(id);
-        if (sucesso)
-            TempData["Sucesso"] = "Check-out realizado. E-mail, Limpeza e Recepção foram atualizados.";
-        else
-            TempData["Erro"] = "Não foi possível realizar o check-out";
+        var reserva = _reservas.FirstOrDefault(r => r.Id == id);
+        if (reserva == null)
+            return NotFound();
 
+        reserva.CheckOut();
+        _notificacaoComposite.InformarSucesso($"Check-out realizado para reserva #{id}");
+        
+        TempData["Sucesso"] = "Check-out realizado com sucesso";
         return RedirectToAction(nameof(Detalhes), new { id });
     }
 }
