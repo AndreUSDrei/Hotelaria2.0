@@ -1,0 +1,108 @@
+@model List<Reserva>
+@using SistemaHotelaria.Prototype
+@using SistemaHotelaria.Services.Iterator
+@{
+    ViewData["Title"] = "Reservas";
+    var filtro = ViewBag.Filtro as FiltroReservas ?? new FiltroReservas();
+    var tiposQuarto = ViewBag.TiposQuarto as List<IQuarto> ?? new List<IQuarto>();
+    var statusOpcoes = ViewBag.StatusOpcoes as string[] ?? Array.Empty<string>();
+}
+
+<h1>📋 Reservas</h1>
+
+<a href="~/Reservas/Criar" class="btn btn-primary mb-3">+ Nova Reserva</a>
+
+<form method="get" asp-action="Index" class="mb-4 filtro-reservas" style="display:grid; gap:0.75rem; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); align-items:end;">
+    <div>
+        <label for="status">Status</label>
+        <select name="status" id="status" class="form-control">
+            <option value="">Todos</option>
+            @foreach (var s in statusOpcoes)
+            {
+                if (filtro.Status == s)
+                {
+                    <option value="@s" selected>@s</option>
+                }
+                else
+                {
+                    <option value="@s">@s</option>
+                }
+            }
+        </select>
+    </div>
+    <div>
+        <label for="tipoQuarto">Tipo de quarto</label>
+        <select name="tipoQuarto" id="tipoQuarto" class="form-control">
+            <option value="">Todos</option>
+            @foreach (var q in tiposQuarto)
+            {
+                if (filtro.TipoQuarto == q.Tipo)
+                {
+                    <option value="@q.Tipo" selected>@q.Tipo</option>
+                }
+                else
+                {
+                    <option value="@q.Tipo">@q.Tipo</option>
+                }
+            }
+        </select>
+    </div>
+    <div>
+        <label for="hospede">Hóspede</label>
+        <input type="text" name="hospede" id="hospede" value="@filtro.NomeHospede" class="form-control" placeholder="Nome" />
+    </div>
+    <div>
+        <label for="dataInicio">A partir de</label>
+        <input type="date" name="dataInicio" id="dataInicio" value="@(filtro.DataInicio?.ToString("yyyy-MM-dd"))" class="form-control" />
+    </div>
+    <div>
+        <label for="dataFim">Até</label>
+        <input type="date" name="dataFim" id="dataFim" value="@(filtro.DataFim?.ToString("yyyy-MM-dd"))" class="form-control" />
+    </div>
+    <div style="display:flex; gap:0.5rem;">
+        <button type="submit" class="btn btn-primary">Filtrar</button>
+        <a href="~/Reservas" class="btn">Limpar</a>
+    </div>
+</form>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">Nenhuma reserva encontrada@(filtro.EstaVazio ? "" : " com os filtros aplicados").</div>
+}
+else
+{
+    <p class="muted">Exibindo @Model.Count reserva(s) via Iterator.</p>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Hóspede</th>
+                <th>Quarto</th>
+                <th>Entrada</th>
+                <th>Saída</th>
+                <th>Valor</th>
+                <th>Pagamento</th>
+                <th>Status</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var r in Model)
+            {
+                <tr>
+                    <td>@r.Id</td>
+                    <td>@r.HospedeNome</td>
+                    <td>@r.TipoQuarto</td>
+                    <td>@r.DataEntrada.ToString("dd/MM/yyyy")</td>
+                    <td>@r.DataSaida.ToString("dd/MM/yyyy")</td>
+                    <td>R$ @r.ValorTotal.ToString("N2")</td>
+                    <td>@r.MetodoPagamento</td>
+                    <td>@r.Status</td>
+                    <td>
+                        <a href="~/Reservas/Detalhes/@r.Id" class="btn btn-sm">Ver</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

@@ -1,0 +1,290 @@
+---
+config:
+  layout: elk
+---
+classDiagram
+    %% ============================================================
+    %% MODELOS DE DOMÍNIO
+    %% ============================================================
+    class Reserva {
+        +string Id
+        +string HospedeNome
+        +string TipoQuarto
+        +DateTime DataEntrada
+        +DateTime DataSaida
+        +PacoteHospedagem Pacote
+        +decimal ValorTotal
+        +bool CheckInRealizado
+        +bool CheckOutRealizado
+        +ExibirDetalhes()
+    }
+
+    class PacoteHospedagem {
+        +string Nome
+        +string Descricao
+        +IQuarto Quarto
+        +List~Refeicao~ Refeicoes
+        +List~ServicoAdicional~ Servicos
+        +decimal DescontoPercentual
+        +CalcularValorTotal(int dias) decimal
+        +ExibirDetalhes()
+    }
+
+    class Refeicao {
+        +string Nome
+        +string Descricao
+        +string Horario
+        +decimal Preco
+        +Exibir()
+    }
+
+    class ServicoAdicional {
+        +string Nome
+        +string Descricao
+        +decimal Preco
+        +Exibir()
+    }
+
+    %% ============================================================
+    %% PROTOTYPE PATTERN
+    %% ============================================================
+    class IQuarto {
+        <<interface>>
+        +string Tipo
+        +string Descricao
+        +int Capacidade
+        +decimal PrecoBaseDiaria
+        +List~string~ Comodidades
+        +Clone() IQuarto
+        +ExibirDetalhes()
+    }
+    class QuartoStandard
+    class QuartoLuxo
+    class Suite
+
+    %% ============================================================
+    %% BUILDER PATTERN
+    %% ============================================================
+    class IPacoteHospedagemBuilder {
+        <<interface>>
+        +DefinirNome(string nome)
+        +DefinirDescricao(string descricao)
+        +SelecionarQuarto(IQuarto quarto)
+        +AdicionarCafeDaManha()
+        +AdicionarAlmoco()
+        +AdicionarJantar()
+        +AdicionarServico(string nome, string descricao, decimal preco)
+        +AplicarDesconto(decimal percentual)
+        +Build() PacoteHospedagem
+        +Reset()
+    }
+    class PacoteRomanticoBuilder
+    class PacoteNegociosBuilder
+    class HotelDirector {
+        -IPacoteHospedagemBuilder builder
+        +ConstruirPacoteRomanticoCompleto(IQuarto quarto)
+        +ConstruirPacoteNegociosCompleto(IQuarto quarto)
+        +ConstruirPacoteBasico(IQuarto quarto)
+        +ConstruirPacoteFimDeSemana(IQuarto quarto)
+        +ObterPacote() PacoteHospedagem
+    }
+
+    %% ============================================================
+    %% DECORATOR PATTERN
+    %% ============================================================
+    class IPacoteDecorator {
+        <<interface>>
+        +ObterPacoteDecorado() PacoteHospedagem
+        +AdicionarServicoExtra()
+        +CalcularValorTotalComDecorators(int dias) decimal
+    }
+    class PacoteDecoratorBase {
+        <<abstract>>
+        #PacoteHospedagem pacoteDecorado
+        +ObterPacoteDecorado() PacoteHospedagem
+        +AdicionarServicoExtra()*
+        +CalcularValorTotalComDecorators(int dias) decimal
+    }
+    class SpaDecorator
+    class TransferDecorator
+    class LateCheckoutDecorator
+    class PetFriendlyDecorator
+
+    %% ============================================================
+    %% FACADE PATTERN
+    %% ============================================================
+    class IReservaFacade {
+        <<interface>>
+        +ObterTodasReservas() List~Reserva~
+        +ObterReservaPorId(string id) Reserva?
+        +CriarReservaComPacote(...) Reserva?
+        +CriarReservaComPacoteEDecorators(...) Reserva?
+        +RealizarCheckIn(string id) bool
+        +RealizarCheckOut(string id) bool
+        +ObterPrototiposQuartos() List~IQuarto~
+        +ObterTiposPacote() string[]
+        +ObterDisponibilidadeCompleta(...) Dictionary~string,int~
+        +ContarReservasAtivas() int
+    }
+    class ReservaFacade {
+        -IGerenciadorReservas gerenciador
+        -HotelService hotelService
+    }
+
+    %% ============================================================
+    %% SERVICES
+    %% ============================================================
+    class IGerenciadorReservas {
+        <<interface>>
+        +QuartoDisponivel(string tipoQuarto, DateTime entrada, DateTime saida) bool
+        +ObterQuantidadeQuartosDisponiveis(...) int
+        +CriarReserva(...) Reserva?
+        +CriarReservaWeb(...) Reserva?
+        +RealizarCheckIn(string idReserva) bool
+        +RealizarCheckOut(string idReserva) bool
+        +ListarReservas() void
+        +ExibirDisponibilidade(...) void
+        +ObterTodasReservas() List~Reserva~
+        +ObterReservaPorId(string id) Reserva?
+        +ObterDisponibilidadeCompleta(...) Dictionary~string,int~
+    }
+    class GerenciadorReservas {
+        -IReservaRepository repositorio
+        -INotificacaoReserva notificacao
+        -IInventarioQuartos inventario
+        -ReservaNotificacaoAdapter reservaNotificacao
+    }
+    class HotelService {
+        +ObterPrototiposQuartos() List~IQuarto~
+        +ObterPrototipoPorTipo(string tipo) IQuarto?
+        +CriarBuilder(string tipoPacote) IPacoteHospedagemBuilder
+    }
+
+    %% ============================================================
+    %% ADAPTER PATTERN - PERSISTENCE
+    %% ============================================================
+    class IReservaRepository {
+        <<interface>>
+        +ObterTodas() IReadOnlyList~Reserva~
+        +ObterPorId(string id) Reserva?
+        +Adicionar(Reserva reserva) void
+        +ContarConflitos(...) int
+    }
+    class InMemoryReservaRepository {
+        -List~Reserva~ reservas
+    }
+    class IInventarioQuartos {
+        <<interface>>
+        +ObterCapacidadePorTipo() IReadOnlyDictionary~string,int~
+    }
+    class InMemoryInventarioQuartosAdapter {
+        +ObterCapacidadePorTipo() IReadOnlyDictionary~string,int~
+    }
+
+    %% ============================================================
+    %% ADAPTER PATTERN - NOTIFICATIONS
+    %% ============================================================
+    class INotificacaoReserva {
+        <<interface>>
+        +Informar(string mensagem) void
+        +InformarErro(string mensagem) void
+        +InformarSucesso(string mensagem) void
+    }
+    class ConsoleNotificacaoAdapter
+    class WebNotificacaoAdapter
+    class CompositeNotificacaoAdapter {
+        -IReadOnlyList~INotificacaoReserva~ adapters
+    }
+    class ReservaNotificacaoAdapter {
+        +ExibirDetalhes(Reserva reserva, INotificacaoReserva notificacao) void
+    }
+
+    %% ============================================================
+    %% PROXY PATTERN
+    %% ============================================================
+    class GerenciadorReservasProxy {
+        -IGerenciadorReservas real
+        -ILogger logger
+        +DatasValidas(DateTime entrada, DateTime saida) bool
+    }
+    class CachingDisponibilidadeProxy {
+        -IGerenciadorReservas real
+        -Dictionary~string,(DateTime,object)~ cache
+        -static TimeSpan CacheDuracao
+        +TryObterCache~T~(...) bool
+        +ArmazenarCache~T~(...) void
+        +InvalidarCacheDisponibilidade() void
+    }
+
+    %% ============================================================
+    %% CONTROLLERS (MVC)
+    %% ============================================================
+    class HomeController {
+        +Index() IActionResult
+        +Pacotes() IActionResult
+    }
+    class ReservasController {
+        -IReservaFacade reservaFacade
+        +Index() IActionResult
+        +Criar() IActionResult
+        +Criar(...) IActionResult
+        +CriarComDecorators(...) IActionResult
+        +Detalhes(string id) IActionResult
+        +CheckIn(string id) IActionResult
+        +CheckOut(string id) IActionResult
+    }
+
+    %% ============================================================
+    %% RELACIONAMENTOS
+    %% ============================================================
+    Reserva --> PacoteHospedagem : contém
+    PacoteHospedagem --> IQuarto : contém
+    PacoteHospedagem --> Refeicao : 1..*
+    PacoteHospedagem --> ServicoAdicional : 1..*
+
+    IQuarto <|.. QuartoStandard
+    IQuarto <|.. QuartoLuxo
+    IQuarto <|.. Suite
+    HotelService --> IQuarto
+
+    IPacoteHospedagemBuilder <|.. PacoteRomanticoBuilder
+    IPacoteHospedagemBuilder <|.. PacoteNegociosBuilder
+    HotelDirector --> IPacoteHospedagemBuilder
+    IPacoteHospedagemBuilder --> PacoteHospedagem
+    HotelService --> IPacoteHospedagemBuilder
+
+    IPacoteDecorator <|.. PacoteDecoratorBase
+    PacoteDecoratorBase <|-- SpaDecorator
+    PacoteDecoratorBase <|-- TransferDecorator
+    PacoteDecoratorBase <|-- LateCheckoutDecorator
+    PacoteDecoratorBase <|-- PetFriendlyDecorator
+    PacoteDecoratorBase --> PacoteHospedagem
+
+    IReservaFacade <|.. ReservaFacade
+    ReservaFacade --> IGerenciadorReservas
+    ReservaFacade --> HotelService
+    ReservaFacade --> IPacoteDecorator
+
+    IGerenciadorReservas <|.. GerenciadorReservas
+    IGerenciadorReservas <|.. GerenciadorReservasProxy
+    IGerenciadorReservas <|.. CachingDisponibilidadeProxy
+    GerenciadorReservas --> IReservaRepository
+    GerenciadorReservas --> INotificacaoReserva
+    GerenciadorReservas --> IInventarioQuartos
+    GerenciadorReservas --> ReservaNotificacaoAdapter
+    GerenciadorReservas --> Reserva
+
+    IReservaRepository <|.. InMemoryReservaRepository
+    IInventarioQuartos <|.. InMemoryInventarioQuartosAdapter
+
+    INotificacaoReserva <|.. ConsoleNotificacaoAdapter
+    INotificacaoReserva <|.. WebNotificacaoAdapter
+    INotificacaoReserva <|.. CompositeNotificacaoAdapter
+    CompositeNotificacaoAdapter --> INotificacaoReserva
+    ReservaNotificacaoAdapter --> Reserva
+
+    GerenciadorReservasProxy --> IGerenciadorReservas
+    CachingDisponibilidadeProxy --> IGerenciadorReservas
+
+    HomeController --> IReservaFacade
+    ReservasController --> IReservaFacade

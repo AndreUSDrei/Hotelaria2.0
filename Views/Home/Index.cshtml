@@ -1,0 +1,79 @@
+@model List<IQuarto>
+@{
+    ViewData["Title"] = "Início";
+}
+
+<div class="hero">
+    <h1>Experiência de Luxo</h1>
+    <p>Descubra o refúgio perfeito com nossos quartos exclusivos e pacotes premium.<br>Reserve agora e viva momentos inesquecíveis.</p>
+    <a href="~/Reservas/Criar" class="btn btn-primary btn-lg">Reserve sua Estadia</a>
+</div>
+
+<div class="stats-bar">
+    <div class="stat-item">
+        <span class="stat-number">@ViewBag.ReservasAtivas</span>
+        <span class="stat-label">Reservas Ativas</span>
+    </div>
+    <div class="stat-item">
+        <span class="stat-number">3</span>
+        <span class="stat-label">Categorias de Quarto</span>
+    </div>
+    <div class="stat-item">
+        <span class="stat-number">4</span>
+        <span class="stat-label">Pacotes Exclusivos</span>
+    </div>
+</div>
+
+<section class="quartos-section">
+    <h2>Nossas Acomodações</h2>
+    <p class="section-subtitle">Escolha entre nossas opções de quartos cuidadosamente projetados para seu conforto</p>
+    
+    <div class="quartos-grid">
+        @foreach (var quarto in Model)
+        {
+            <div class="quarto-card">
+                <div class="quarto-header">
+                    <div class="quarto-icon">
+                        @(quarto.Tipo.Contains("Suíte") ? "👑" : quarto.Tipo.Contains("Luxo") ? "🌟" : "🏨")
+                    </div>
+                    <h3>@quarto.Tipo</h3>
+                </div>
+                <p>@quarto.Descricao</p>
+                <ul class="comodidades">
+                    @foreach (var comodidade in quarto.Comodidades.Take(4))
+                    {
+                        <li>@comodidade</li>
+                    }
+                </ul>
+                <div class="quarto-footer">
+                    <span class="preco">R$ @quarto.PrecoBaseDiaria.ToString("N2")<small>/noite</small></span>
+                    <span class="capacidade">👥 @quarto.Capacidade pessoas</span>
+                </div>
+            </div>
+        }
+    </div>
+</section>
+
+<style>
+    .quartos-section {
+        margin-top: 4rem;
+    }
+    
+    .section-subtitle {
+        text-align: center;
+        color: #666;
+        font-size: 1.1rem;
+        margin-top: -2rem;
+        margin-bottom: 2rem;
+    }
+    
+    h2 {
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+    
+    h2::after {
+        left: 50%;
+        transform: translateX(-50%);
+    }
+</style>

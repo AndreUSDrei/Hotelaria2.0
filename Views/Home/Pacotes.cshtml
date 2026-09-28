@@ -1,0 +1,260 @@
+@model List<IQuarto>
+@{
+    ViewData["Title"] = "Pacotes de Hospedagem";
+}
+
+<h1>📦 Pacotes de Hospedagem</h1>
+<p class="subtitle">Escolha o pacote perfeito para sua estadia. Todos os pacotes já incluem o quarto!</p>
+
+<div class="pacotes-grid">
+    <div class="pacote-card romantico">
+        <div class="pacote-header">
+            <span class="pacote-icon">💕</span>
+            <h3>Pacote Romântico</h3>
+        </div>
+        <p class="pacote-descricao">Experiência perfeita para casais</p>
+        <ul class="pacote-itens">
+            <li>☕ Café da manhã no quarto com champagne</li>
+            <li>🍽️ Almoço à La Carte</li>
+            <li>🕯️ Jantar à luz de velas</li>
+            <li>💆 Spa para casal (1h)</li>
+            <li>🌹 Decoração romântica</li>
+            <li>🕐 Late check-out até 16h</li>
+        </ul>
+        <div class="pacote-desconto">10% OFF</div>
+        <div class="pacote-precos">
+            <p class="preco-label">Preço por noite (inclui quarto):</p>
+            @foreach (var q in Model)
+            {
+                var precoBase = q.PrecoBaseDiaria + 120 + 180 + 250 + 350 + 150 + 100; // diária + refeições + serviços
+                var precoComDesconto = precoBase * 0.90m;
+                <div class="preco-quarto">
+                    <span class="quarto-tipo">@q.Tipo:</span>
+                    <span class="preco-original">R$ @precoBase.ToString("N2")</span>
+                    <span class="preco-final">R$ @precoComDesconto.ToString("N2")</span>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="pacote-card negocios">
+        <div class="pacote-header">
+            <span class="pacote-icon">💼</span>
+            <h3>Pacote Business</h3>
+        </div>
+        <p class="pacote-descricao">Solução completa para executivos</p>
+        <ul class="pacote-itens">
+            <li>☕ Café expresso executivo</li>
+            <li>🍽️ Business lunch</li>
+            <li>📊 Sala de reuniões (2h)</li>
+            <li>👔 Lavanderia express</li>
+            <li>🚗 Transfer executivo</li>
+        </ul>
+        <div class="pacote-desconto">15% OFF</div>
+        <div class="pacote-precos">
+            <p class="preco-label">Preço por noite (inclui quarto):</p>
+            @foreach (var q in Model)
+            {
+                var precoBase = q.PrecoBaseDiaria + 45 + 85 + 200 + 80 + 250; // diária + refeições + serviços
+                var precoComDesconto = precoBase * 0.85m;
+                <div class="preco-quarto">
+                    <span class="quarto-tipo">@q.Tipo:</span>
+                    <span class="preco-original">R$ @precoBase.ToString("N2")</span>
+                    <span class="preco-final">R$ @precoComDesconto.ToString("N2")</span>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="pacote-card basico">
+        <div class="pacote-header">
+            <span class="pacote-icon">🏨</span>
+            <h3>Pacote Básico</h3>
+        </div>
+        <p class="pacote-descricao">Hospedagem econômica</p>
+        <ul class="pacote-itens">
+            <li>☕ Café da manhã buffet</li>
+            <li>🛏️ Quarto confortável</li>
+            <li>📶 Wi-Fi gratuito</li>
+        </ul>
+        <div class="pacote-preco">Preço base - Sem desconto</div>
+        <div class="pacote-precos">
+            <p class="preco-label">Preço por noite (inclui quarto):</p>
+            @foreach (var q in Model)
+            {
+                var precoBase = q.PrecoBaseDiaria + 35; // diária + café da manhã estimado
+                <div class="preco-quarto">
+                    <span class="quarto-tipo">@q.Tipo:</span>
+                    <span class="preco-final preco-unico">R$ @precoBase.ToString("N2")</span>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="pacote-card fimdesemana">
+        <div class="pacote-header">
+            <span class="pacote-icon">🎉</span>
+            <h3>Pacote Fim de Semana</h3>
+        </div>
+        <p class="pacote-descricao">Descanse e relaxe</p>
+        <ul class="pacote-itens">
+            <li>☕ Café da manhã completo</li>
+            <li>🍽️ Jantar especial</li>
+            <li>🏋️ Acesso à academia</li>
+            <li>🎮 Área de lazer</li>
+        </ul>
+        <div class="pacote-desconto">20% OFF</div>
+        <div class="pacote-precos">
+            <p class="preco-label">Preço por noite (inclui quarto):</p>
+            @foreach (var q in Model)
+            {
+                var precoBase = q.PrecoBaseDiaria + 45 + 150 + 50; // diária + café + jantar + academia
+                var precoComDesconto = precoBase * 0.80m;
+                <div class="preco-quarto">
+                    <span class="quarto-tipo">@q.Tipo:</span>
+                    <span class="preco-original">R$ @precoBase.ToString("N2")</span>
+                    <span class="preco-final">R$ @precoComDesconto.ToString("N2")</span>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .subtitle {
+        color: #666;
+        margin-bottom: 2rem;
+        font-size: 1.1rem;
+    }
+    
+    .pacotes-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 2rem;
+        margin: 2rem 0;
+    }
+    
+    .pacote-card {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border-top: 5px solid;
+        transition: transform 0.3s;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .pacote-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .pacote-card.romantico { border-color: #e84393; }
+    .pacote-card.negocios { border-color: #0984e3; }
+    .pacote-card.basico { border-color: #00b894; }
+    .pacote-card.fimdesemana { border-color: #fdcb6e; }
+    
+    .pacote-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .pacote-icon {
+        font-size: 2.5rem;
+    }
+    
+    .pacote-card h3 {
+        color: #2d3436;
+    }
+    
+    .pacote-descricao {
+        color: #636e72;
+        margin-bottom: 1rem;
+    }
+    
+    .pacote-itens {
+        list-style: none;
+        margin: 1rem 0;
+        flex-grow: 1;
+    }
+    
+    .pacote-itens li {
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #f1f2f6;
+    }
+    
+    .pacote-desconto {
+        background: #27ae60;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        text-align: center;
+        font-weight: bold;
+        margin-top: 1rem;
+    }
+    
+    .pacote-preco {
+        background: #74b9ff;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        text-align: center;
+        font-weight: bold;
+        margin-top: 1rem;
+    }
+    
+    /* Tabela de preços */
+    .pacote-precos {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 2px dashed #e0e0e0;
+    }
+    
+    .preco-label {
+        font-weight: 600;
+        color: #2d3436;
+        margin-bottom: 0.8rem;
+        font-size: 0.95rem;
+    }
+    
+    .preco-quarto {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.4rem 0;
+        font-size: 0.9rem;
+        border-bottom: 1px solid #f1f2f6;
+    }
+    
+    .preco-quarto:last-child {
+        border-bottom: none;
+    }
+    
+    .quarto-tipo {
+        color: #636e72;
+        font-weight: 500;
+    }
+    
+    .preco-original {
+        text-decoration: line-through;
+        color: #b2bec3;
+        font-size: 0.85rem;
+        margin-right: 0.5rem;
+    }
+    
+    .preco-final {
+        font-weight: 700;
+        color: #27ae60;
+        font-size: 1rem;
+    }
+    
+    .preco-unico {
+        color: #0984e3;
+    }
+</style>
+
+<div class="text-center mt-4">
+    <a href="~/Reservas/Criar" class="btn btn-primary btn-lg">Reservar Agora</a>
+</div>
