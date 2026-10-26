@@ -120,6 +120,39 @@
         </div>
     }
 
+    @{
+        var historicoMementos = ViewBag.HistoricoMementos as IReadOnlyList<ReservaMemento>
+            ?? Array.Empty<ReservaMemento>();
+    }
+
+    <div class="card">
+        <h3>Memento — histórico de estados</h3>
+        <p class="muted">Antes de cada check-in, check-out ou cancelamento, a reserva grava um instantâneo. Restaurar devolve o status anterior sem reexecutar a ação.</p>
+
+        @if (!historicoMementos.Any())
+        {
+            <p class="muted">Nenhum snapshot ainda. Ele aparece depois da primeira mudança de status.</p>
+        }
+        else
+        {
+            <ul class="memento-lista">
+                @foreach (var snap in historicoMementos.Reverse())
+                {
+                    <li>
+                        <strong>@snap.Acao</strong>
+                        <span>status @snap.Status</span>
+                        <span class="evento-hora">@snap.Timestamp.ToString("dd/MM HH:mm:ss")</span>
+                    </li>
+                }
+            </ul>
+
+            <form method="post" asp-action="RestaurarEstadoAnterior" asp-route-id="@Model.Id"
+                  onsubmit="return confirm('Restaurar o último estado salvo desta reserva?');">
+                <button type="submit" class="btn btn-secondary">↩️ Restaurar estado anterior</button>
+            </form>
+        }
+    </div>
+
     <div class="acoes">
         @if (Model.EstadoAtual.Nome == "Confirmada")
         {

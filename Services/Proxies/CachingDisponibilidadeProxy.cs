@@ -1,4 +1,5 @@
 using SistemaHotelaria.Services.Iterator;
+using SistemaHotelaria.Services.Memento;
 
 namespace SistemaHotelaria.Services.Proxies;
 
@@ -100,6 +101,17 @@ public class CachingDisponibilidadeProxy : IGerenciadorReservas
         InvalidarCacheDisponibilidade();
         _real.AtualizarReserva(reserva);
     }
+
+    public bool RestaurarEstadoAnterior(string idReserva)
+    {
+        var ok = _real.RestaurarEstadoAnterior(idReserva);
+        if (ok)
+            InvalidarCacheDisponibilidade();
+        return ok;
+    }
+
+    public IReadOnlyList<ReservaMemento> ObterHistoricoEstados(string idReserva) =>
+        _real.ObterHistoricoEstados(idReserva);
 
     private bool TryObterCache<T>(string chave, out T valor)
     {

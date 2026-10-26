@@ -113,12 +113,12 @@ public class Reserva : ISubject
         Pacote?.ExibirDetalhes();
     }
 
-    public ReservaMemento CriarMemento()
+    public ReservaMemento CriarMemento(string acao = "")
     {
         return new ReservaMemento(
             Id, HospedeNome, TipoQuarto, DataEntrada, DataSaida,
             ValorTotal, Status, MetodoPagamento, PagamentoTransacaoId,
-            PagamentoComprovante);
+            PagamentoComprovante, acao);
     }
 
     public void RestaurarMemento(ReservaMemento memento)

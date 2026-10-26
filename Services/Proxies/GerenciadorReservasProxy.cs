@@ -2,6 +2,7 @@ using SistemaHotelaria.Builder;
 using SistemaHotelaria.Models;
 using SistemaHotelaria.Prototype;
 using SistemaHotelaria.Services.Iterator;
+using SistemaHotelaria.Services.Memento;
 
 namespace SistemaHotelaria.Services.Proxies;
 
@@ -97,6 +98,15 @@ public class GerenciadorReservasProxy : IGerenciadorReservas
         _logger.LogInformation("Atualizando reserva: {Id}", reserva.Id);
         _real.AtualizarReserva(reserva);
     }
+
+    public bool RestaurarEstadoAnterior(string idReserva)
+    {
+        _logger.LogInformation("Restaurando estado anterior: {Id}", idReserva);
+        return _real.RestaurarEstadoAnterior(idReserva);
+    }
+
+    public IReadOnlyList<ReservaMemento> ObterHistoricoEstados(string idReserva) =>
+        _real.ObterHistoricoEstados(idReserva);
 
     private static bool DatasValidas(DateTime entrada, DateTime saida) =>
         entrada < saida && entrada.Date >= DateTime.Today.AddDays(-1);

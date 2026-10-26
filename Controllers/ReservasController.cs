@@ -35,6 +35,7 @@ public class ReservasController : Controller
         ViewBag.Filtro = filtro;
         ViewBag.TiposQuarto = _reservaFacade.ObterPrototiposQuartos();
         ViewBag.StatusOpcoes = new[] { "Confirmada", "Check-in", "Check-out", "Cancelada" };
+        ViewBag.PodeDesfazerComando = _commandInvoker.GetCommandHistoryCount() > 0;
         return View(reservas);
     }
 
@@ -122,6 +123,7 @@ public class ReservasController : Controller
         if (reserva == null)
             return NotFound();
 
+        ViewBag.HistoricoMementos = _reservaFacade.ObterHistoricoEstados(id);
         return View(reserva);
     }
 
@@ -173,8 +175,25 @@ public class ReservasController : Controller
     [HttpPost]
     public IActionResult DesfazerUltimaAcao()
     {
+        if (_commandInvoker.GetCommandHistoryCount() == 0)
+        {
+            TempData["Erro"] = "Não há ação de comando para desfazer.";
+            return RedirectToAction(nameof(Index));
+        }
+
         _commandInvoker.UndoLastCommand();
         TempData["Sucesso"] = "Última ação desfeita com sucesso.";
         return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    public IActionResult RestaurarEstadoAnterior(string id)
+    {
+        if (_reservaFacade.RestaurarEstadoAnterior(id))
+            TempData["Sucesso"] = "Estado anterior da reserva restaurado (Memento).";
+        else
+            TempData["Erro"] = "Não há snapshot anterior para esta reserva.";
+
+        return RedirectToAction(nameof(Detalhes), new { id });
     }
 }

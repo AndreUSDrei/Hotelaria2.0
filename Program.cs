@@ -4,6 +4,7 @@ using SistemaHotelaria.Services;
 using SistemaHotelaria.Services.Commands;
 using SistemaHotelaria.Services.Facade;
 using SistemaHotelaria.Services.Notifications;
+using SistemaHotelaria.Services.Memento;
 using SistemaHotelaria.Services.Observer;
 using SistemaHotelaria.Services.Persistence;
 using SistemaHotelaria.Services.Proxies;
@@ -30,6 +31,7 @@ builder.Services.AddSingleton<IObserver, ServicoEmail>();
 builder.Services.AddSingleton<IObserver, ServicoLimpeza>();
 builder.Services.AddSingleton<IObserver, Recepcao>();
 
+builder.Services.AddSingleton<IReservaCaretaker, ReservaCaretaker>();
 builder.Services.AddScoped<GerenciadorReservas>();
 builder.Services.AddScoped<IGerenciadorReservas>(sp =>
 {

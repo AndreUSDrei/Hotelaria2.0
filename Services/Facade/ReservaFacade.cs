@@ -3,6 +3,7 @@ using SistemaHotelaria.Decorator;
 using SistemaHotelaria.Models;
 using SistemaHotelaria.Prototype;
 using SistemaHotelaria.Services.Iterator;
+using SistemaHotelaria.Services.Memento;
 
 namespace SistemaHotelaria.Services.Facade;
 
@@ -32,6 +33,11 @@ public class ReservaFacade : IReservaFacade
     public bool RealizarCheckOut(string id) => _gerenciador.RealizarCheckOut(id);
 
     public bool CancelarReserva(string id) => _gerenciador.CancelarReserva(id);
+
+    public bool RestaurarEstadoAnterior(string id) => _gerenciador.RestaurarEstadoAnterior(id);
+
+    public IReadOnlyList<ReservaMemento> ObterHistoricoEstados(string id) =>
+        _gerenciador.ObterHistoricoEstados(id);
 
     public List<IQuarto> ObterPrototiposQuartos() => _hotelService.ObterPrototiposQuartos();
 

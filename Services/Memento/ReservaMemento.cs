@@ -1,5 +1,9 @@
 namespace SistemaHotelaria.Services.Memento;
 
+/// <summary>
+/// Memento: instantâneo imutável do estado da reserva.
+/// O Caretaker guarda esta classe sem alterar os campos internos.
+/// </summary>
 public class ReservaMemento
 {
     public string Id { get; }
@@ -12,13 +16,14 @@ public class ReservaMemento
     public string MetodoPagamento { get; }
     public string PagamentoTransacaoId { get; }
     public string PagamentoComprovante { get; }
+    public string Acao { get; }
     public DateTime Timestamp { get; }
 
     public ReservaMemento(
         string id, string hospedeNome, string tipoQuarto,
         DateTime dataEntrada, DateTime dataSaida, decimal valorTotal,
         string status, string metodoPagamento, string pagamentoTransacaoId,
-        string pagamentoComprovante)
+        string pagamentoComprovante, string acao = "")
     {
         Id = id;
         HospedeNome = hospedeNome;
@@ -30,6 +35,7 @@ public class ReservaMemento
         MetodoPagamento = metodoPagamento;
         PagamentoTransacaoId = pagamentoTransacaoId;
         PagamentoComprovante = pagamentoComprovante;
+        Acao = acao;
         Timestamp = DateTime.Now;
     }
 }

@@ -2,6 +2,7 @@ using SistemaHotelaria.Builder;
 using SistemaHotelaria.Models;
 using SistemaHotelaria.Prototype;
 using SistemaHotelaria.Services.Iterator;
+using SistemaHotelaria.Services.Memento;
 using SistemaHotelaria.Services.Notifications;
 using SistemaHotelaria.Services.Persistence;
 using SistemaHotelaria.Services.Observer;
@@ -16,6 +17,7 @@ public class GerenciadorReservas : IGerenciadorReservas
     private readonly IInventarioQuartos _inventario;
     private readonly ReservaNotificacaoAdapter _reservaNotificacao;
     private readonly IEnumerable<IObserver> _observadores;
+    private readonly IReservaCaretaker _caretaker;
     private int _contadorQuartos = 100;
 
     public GerenciadorReservas(
@@ -23,13 +25,15 @@ public class GerenciadorReservas : IGerenciadorReservas
         INotificacaoReserva notificacao,
         IInventarioQuartos inventario,
         ReservaNotificacaoAdapter reservaNotificacao,
-        IEnumerable<IObserver> observadores)
+        IEnumerable<IObserver> observadores,
+        IReservaCaretaker caretaker)
     {
         _repositorio = repositorio;
         _notificacao = notificacao;
         _inventario = inventario;
         _reservaNotificacao = reservaNotificacao;
         _observadores = observadores;
+        _caretaker = caretaker;
     }
 
     private IReadOnlyDictionary<string, int> QuartosPorTipo => _inventario.ObterCapacidadePorTipo();
@@ -89,7 +93,9 @@ public class GerenciadorReservas : IGerenciadorReservas
         try
         {
             AnexarObservadores(reserva);
+            var snapshot = reserva.CriarMemento("Antes do check-in");
             reserva.CheckIn();
+            _caretaker.Salvar(snapshot);
             _repositorio.Atualizar(reserva);
 
             int numeroQuarto = ++_contadorQuartos;
@@ -115,7 +121,9 @@ public class GerenciadorReservas : IGerenciadorReservas
         try
         {
             AnexarObservadores(reserva);
+            var snapshot = reserva.CriarMemento("Antes do check-out");
             reserva.CheckOut();
+            _caretaker.Salvar(snapshot);
             _repositorio.Atualizar(reserva);
 
             _notificacao.InformarSucesso($"\n👋 Check-out realizado! Obrigado pela estadia.");
@@ -140,7 +148,9 @@ public class GerenciadorReservas : IGerenciadorReservas
         try
         {
             AnexarObservadores(reserva);
+            var snapshot = reserva.CriarMemento("Antes do cancelamento");
             reserva.Cancelar();
+            _caretaker.Salvar(snapshot);
             _repositorio.Atualizar(reserva);
 
             _notificacao.InformarSucesso($"\n🚫 Reserva #{reserva.Id} cancelada.");
@@ -270,4 +280,29 @@ public class GerenciadorReservas : IGerenciadorReservas
     {
         _repositorio.Atualizar(reserva);
     }
+
+    public bool RestaurarEstadoAnterior(string idReserva)
+    {
+        var reserva = _repositorio.ObterPorId(idReserva);
+        if (reserva == null)
+        {
+            _notificacao.InformarErro($"❌ Reserva {idReserva} não encontrada.");
+            return false;
+        }
+
+        var memento = _caretaker.RemoverUltimo(idReserva);
+        if (memento == null)
+        {
+            _notificacao.Informar($"⚠️ Não há estado anterior para a reserva {idReserva}.");
+            return false;
+        }
+
+        reserva.RestaurarMemento(memento);
+        _repositorio.Atualizar(reserva);
+        _notificacao.InformarSucesso($"\n↩️ Reserva #{reserva.Id} restaurada para o status {reserva.Status}.");
+        return true;
+    }
+
+    public IReadOnlyList<ReservaMemento> ObterHistoricoEstados(string idReserva) =>
+        _caretaker.ObterHistorico(idReserva);
 }

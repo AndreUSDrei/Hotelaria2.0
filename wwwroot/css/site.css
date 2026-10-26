@@ -1228,3 +1228,22 @@ select.form-control {
     font-size: 0.85rem;
     color: #2d6a4f;
 }
+
+.memento-lista {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.25rem;
+}
+
+.memento-lista li {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem 1rem;
+    align-items: baseline;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid rgba(201,169,98,0.2);
+}
+
+.memento-lista li:last-child {
+    border-bottom: none;
+}

@@ -2,6 +2,7 @@ using SistemaHotelaria.Builder;
 using SistemaHotelaria.Models;
 using SistemaHotelaria.Prototype;
 using SistemaHotelaria.Services.Iterator;
+using SistemaHotelaria.Services.Memento;
 
 namespace SistemaHotelaria.Services;
 
@@ -23,4 +24,6 @@ public interface IGerenciadorReservas
         string metodoPagamento = "Pix", string? numeroCartao = null, string? cvv = null);
     bool CancelarReserva(string idReserva);
     void AtualizarReserva(Reserva reserva);
+    bool RestaurarEstadoAnterior(string idReserva);
+    IReadOnlyList<ReservaMemento> ObterHistoricoEstados(string idReserva);
 }

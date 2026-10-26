@@ -2,6 +2,7 @@ using SistemaHotelaria.Builder;
 using SistemaHotelaria.Models;
 using SistemaHotelaria.Prototype;
 using SistemaHotelaria.Services.Iterator;
+using SistemaHotelaria.Services.Memento;
 
 namespace SistemaHotelaria.Services.Facade;
 
@@ -24,6 +25,8 @@ public interface IReservaFacade
     bool RealizarCheckIn(string id);
     bool RealizarCheckOut(string id);
     bool CancelarReserva(string id);
+    bool RestaurarEstadoAnterior(string id);
+    IReadOnlyList<ReservaMemento> ObterHistoricoEstados(string id);
     List<IQuarto> ObterPrototiposQuartos();
     string[] ObterTiposPacote();
     Dictionary<string, int> ObterDisponibilidadeCompleta(DateTime entrada, DateTime saida);
